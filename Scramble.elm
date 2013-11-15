@@ -17,17 +17,16 @@ startBoard = [ ['a', 'b']
 
 mapWithIndex : (Position -> a -> b) -> [[a]] -> [[b]]
 mapWithIndex f bd = 
-  let max = length bd
-      inner x cs = zipWith (\y c -> f {x = x, y = y} c) [1..max] cs in
-  zipWith inner [1..max] bd
-  
+  let max = length bd - 1
+      inner x cs = zipWith (\y c -> f {x = x, y = y} c) [0..max] cs in
+  zipWith inner [0..max] bd
 
-boardButtons : Board -> { events  : Signal (Maybe Position)
+boardButtons : Board -> { events  : Signal (Maybe (Position, Char))
                         , squares : [[ Element ]] }
 boardButtons bd =
   let btns = Graphics.Input.buttons Nothing in
   { btns - button |
-    squares =  mapWithIndex (\p c -> btns.button (Just p) (String.cons c "")) bd }
+    squares =  mapWithIndex (\p c -> btns.button (Just (p,c)) (String.cons c "")) bd }
 
 startState = { board = startBoard
              , curGuess = []}             
@@ -39,11 +38,8 @@ toElement = flow down . map (flow right . map asText)
 posToPair : Position -> (Int, Int)
 posToPair p = (p.x, p.y)
 
-render : GameState -> Element
+render : GameState -> Signal Element
 render st = let btns = boardButtons st.board in
-  flow down [ flow down . map (flow right) <| btns.squares
-            , asText st.curGuess
-            ]
-
-
-
+  flow down <~ combine [ constant <| flow down . map (flow right) <| btns.squares
+                       , constant <| asText st.curGuess
+                       , asText <~ btns.events]
