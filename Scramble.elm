@@ -1,6 +1,6 @@
 module Main where
 
-import Graphics.Input
+import Input as I
 import String
 
 type Board = [[Char]]
@@ -12,8 +12,9 @@ type GameState = { board    : Board
 main = render startState
 
 startBoard : Board
-startBoard = [ ['a', 'b']
-             , ['c', 'd'] ]
+startBoard = [ ['a', 'b', 'c']
+             , ['d', 'e', 'f']
+             , ['g', 'h', 'i'] ]
 
 mapWithIndex : (Position -> a -> b) -> [[a]] -> [[b]]
 mapWithIndex f bd = 
@@ -22,11 +23,16 @@ mapWithIndex f bd =
   zipWith inner [0..max] bd
 
 boardButtons : Board -> { events  : Signal (Maybe (Position, Char))
-                        , squares : [[ Element ]] }
+                        , squares : (Position -> Char -> Element) -> [[ Element ]] }
 boardButtons bd =
-  let btns = Graphics.Input.buttons Nothing in
-  { btns - button |
-    squares =  mapWithIndex (\p c -> btns.button (Just (p,c)) (String.cons c "")) bd }
+  let btns = I.clickables Nothing
+      mkButton mkElt p c =
+        let elt = mkElt p c in
+        btns.clickable (Just (p,c)) elt
+      squares mkElt = mapWithIndex (mkButton mkElt) bd
+
+  in
+   { btns - clickable | squares = squares }
 
 startState = { board = startBoard
              , curGuess = []}             
@@ -38,8 +44,14 @@ toElement = flow down . map (flow right . map asText)
 posToPair : Position -> (Int, Int)
 posToPair p = (p.x, p.y)
 
+renderButton : Position -> Char -> Element
+renderButton _ c = plainText . singleton <| c
+
 render : GameState -> Signal Element
 render st = let btns = boardButtons st.board in
-  flow down <~ combine [ constant <| flow down . map (flow right) <| btns.squares
+  flow down <~ combine [ constant <| flow down . map (flow right) <| btns.squares renderButton
                        , constant <| asText st.curGuess
                        , asText <~ btns.events]
+
+singleton : Char -> String
+singleton c = String.cons c ""
