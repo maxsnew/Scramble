@@ -1,5 +1,7 @@
 module Main where
 
+import open Board
+import Board as B
 import Graphics.Input as GI
 import Input as I
 import String
@@ -7,13 +9,9 @@ import String
 -- Main
 main = startGame <| startState start5
 
--- Boards are assumed to be nxn for some n
-type Board = [[Char]]
-type Position = { x : Int, y : Int }
-
 -- Model
 type GameState = { board    : Board
-                 , curGuess : [Position] }
+                 , curGuess : [(Position, Char)] }
 
 data Rot = Clock | CtrClock           
 
@@ -22,11 +20,13 @@ data Msg = Tile Position Char
          | Rotate Rot
 
 -- Initial
-start3 = [ ['a', 'b', 'c']
+start3 = B.make <|
+         [ ['a', 'b', 'c']
          , ['d', 'e', 'f']
          , ['g', 'h', 'i'] ]
 
-start5 = [ ['t', 'd', 'o', 'a', 'f']
+start5 = B.make <|
+         [ ['t', 'd', 'o', 'a', 'f']
          , ['l', 'n', 't', 'c', 'n']
          , ['x', 'e', 't', 'p', 'e']
          , ['f', 'g', 'l', 't', 'v']
@@ -37,13 +37,6 @@ startState b = { board = b, curGuess = []}
 -- Update
 plainButton = fst . GI.button
 
-rotateR : [[a]] -> [[a]]
-rotateR b = let base = repeat (length b) []
-            in foldl (zipWith (::)) base b
-
-rotateL b = let base = repeat (length b) []
-            in foldr (zipWith (::)) base . map reverse <| b
-
 interpret : Msg -> GameState -> GameState
 interpret m g = case m of
   Tile p c -> squareClick p c g
@@ -53,7 +46,7 @@ interpret m g = case m of
     CtrClock -> { g | board <- rotateL g.board }
 
 squareClick : Position -> Char -> GameState -> GameState
-squareClick pos c st = { st | curGuess <- consNew pos st.curGuess }
+squareClick pos c st = { st | curGuess <- tilePress (pos, c) st.curGuess }
 
 -- Display
 startGame : GameState -> Signal Element
@@ -71,7 +64,7 @@ startGame init =
 
 renderBoard : (Msg -> Element -> Element) -> GameState -> Element
 renderBoard but = let mkBut p c =  but (Tile p c) (tileButton c) in 
-  flow down . map (flow right) . mapWithIndex mkBut . .board
+  flow down . map (flow right) . map (map (uncurry mkBut)) . B.unB . .board
 
 tileButton : Char -> Element
 tileButton c = let s = 50 in 
@@ -80,11 +73,21 @@ tileButton c = let s = 50 in
               ]
 
 -- Utility
+neighbor : Position -> Position -> Bool
+neighbor p1 p2 = abs (p1.x - p2.x) == 1 && abs (p1.y - p2.y) == 1
+  
 member x xs = case xs of
   []        -> False
   (y :: ys) -> if (x == y)
                then True
                else member x ys
+
+tilePress : (Position, Char) -> [(Position, Char)] -> [(Position, Char)]
+tilePress p ps = case ps of
+  []         -> [p]
+  p' :: _  -> if ((neighbor `on` fst) p p' && member (fst p) (map fst ps))
+              then p :: ps
+              else ps
 
 consNew : Position -> [Position] -> [Position]
 consNew p ps = if member p ps
@@ -94,10 +97,5 @@ consNew p ps = if member p ps
 singleton : Char -> String
 singleton c = String.cons c ""
 
-mapWithIndex : (Position -> a -> b) -> [[a]] -> [[b]]
-mapWithIndex f bd = 
-  let max = length bd - 1
-      inner x cs = zipWith (\y c -> f {x = x, y = y} c) [0..max] cs in
-  zipWith inner [0..max] bd
-
-
+on : (a -> a -> c) -> (b -> a) -> (b -> b -> c)
+on p f = \x y -> p (f x) (f y)
