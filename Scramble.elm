@@ -7,7 +7,7 @@ import Input as I
 import String
 
 -- Main
-main = startGame <| startState start5
+main = startGame <| startState start3
 
 -- Model
 type GameState = { board    : Board
@@ -18,8 +18,11 @@ data Rot = Clock | CtrClock
 data Msg = Tile Position Char
          | Reset
          | Rotate Rot
+         | ChangeBoard Board
 
 -- Initial
+start2 = B.make <| [ ['a', 'b']
+                   , ['c', 'd'] ]
 start3 = B.make <|
          [ ['a', 'b', 'c']
          , ['d', 'e', 'f']
@@ -32,7 +35,7 @@ start5 = B.make <|
          , ['f', 'g', 'l', 't', 'v']
          , ['f', 'd', 'e', 'a', 't'] ]
 
-startState b = { board = b, curGuess = []}             
+startState b = { board = b, curGuess = [] }
 
 -- Update
 plainButton = fst . GI.button
@@ -41,6 +44,7 @@ interpret : Msg -> GameState -> GameState
 interpret m g = case m of
   Tile p c -> squareClick p c g
   Reset    -> { g | curGuess <- [] }
+  ChangeBoard b -> { g | board <- b }
   Rotate r -> case r of
     Clock    -> { g | board <- rotateR g.board }
     CtrClock -> { g | board <- rotateL g.board }
@@ -54,28 +58,32 @@ startGame init =
   let btns         = I.buttons Nothing
       button m e = btns.button (Just m) e
       state        = foldp (maybe id interpret) init (btns.events)
-      pButton m s = constant . button m . plainButton <| s
-  in
-   flow down <~ combine [ renderBoard button <~ state
-                        , pButton Reset          "Reset"
-                        , pButton (Rotate Clock) "Clockwise"
-                        , pButton (Rotate CtrClock) "Counter-Clockwise"
-                        , asText <~ state]
+      pButton m s = constant . button m . plainButton <| s in
+  flow down <~ combine [ renderBoard button <~ state
+                       , pButton Reset             "Reset"
+                       , pButton (Rotate Clock)    "Clockwise"
+                       , pButton (Rotate CtrClock) "Counter-Clockwise"
+                       , pButton (ChangeBoard start2) "Change 2"
+                       , pButton (ChangeBoard start3) "Change 3"
+                       , pButton (ChangeBoard start5) "Change 5"
+                       , asText <~ btns.events
+                       , asText <~ state
+                       ]
 
 renderBoard : (Msg -> Element -> Element) -> GameState -> Element
-renderBoard but = let mkBut p c =  but (Tile p c) (tileButton c) in 
+renderBoard but = let mkBut p c =  but (Tile p c) (tileButton p c) in 
   flow down . map (flow right) . map (map (uncurry mkBut)) . B.unB . .board
 
-tileButton : Char -> Element
-tileButton c = let s = 50 in 
-  collage s s [ toForm . plainText . singleton <| c
+tileButton : Position -> Char -> Element
+tileButton p c = let s = 150 in 
+  collage s s [ toForm <| above (asText p) (plainText . singleton <| c)
               , outlined (solid black) (square s)
               ]
 
 -- Utility
 neighbor : Position -> Position -> Bool
-neighbor p1 p2 = abs (p1.x - p2.x) == 1 && abs (p1.y - p2.y) == 1
-  
+neighbor p1 p2 = True
+
 member x xs = case xs of
   []        -> False
   (y :: ys) -> if (x == y)
@@ -85,7 +93,7 @@ member x xs = case xs of
 tilePress : (Position, Char) -> [(Position, Char)] -> [(Position, Char)]
 tilePress p ps = case ps of
   []         -> [p]
-  p' :: _  -> if ((neighbor `on` fst) p p' && member (fst p) (map fst ps))
+  p' :: _  -> if ((neighbor `on` fst) p p' && not (member (fst p) (map fst ps)))
               then p :: ps
               else ps
 
