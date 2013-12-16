@@ -2,15 +2,26 @@ module Input (buttons)
        where
 import Graphics.Input as I
 import Mouse
+import Maybe as M
 
 const : a -> b -> a
 const x y = x
 
+-- Infinite loop bc I don't know how to do errors
+fromJust x = case x of
+  Just y -> y
+  Nothing -> fromJust x
+
+justs : a -> Signal (Maybe a) -> Signal a
+justs x s = fromJust <~ (keepIf M.isJust (Just x) s)
+
 buttons : a -> { events    : Signal a
-               , button : a -> Element -> Element }
-buttons def = let hovs = I.hoverables def
-              in { events    = keepWhen Mouse.isDown def hovs.events
-                 , button = \v -> hovs.hoverable (const v)
+               , button    : a -> Element -> Element }
+buttons def = let hovs = I.hoverables (Just def)
+              in { events = justs def . keepWhen Mouse.isDown (Just def) <| hovs.events
+                 , button = \v -> hovs.hoverable (\b -> if b
+                                                        then Just v
+                                                        else Nothing)
                  }
 
 scs = buttons Nothing
