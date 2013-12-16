@@ -1,4 +1,4 @@
-module Input (clickables)
+module Input (buttons)
        where
 import Graphics.Input as I
 import Mouse
@@ -6,16 +6,16 @@ import Mouse
 const : a -> b -> a
 const x y = x
 
-clickables : a -> { events    : Signal a
-                  , clickable : a -> Element -> Element }
-clickables def = let hovs = I.hoverables def
-                 in { events    = keepWhen Mouse.isDown def hovs.events
-                    , clickable = \v -> hovs.hoverable (const v)
-                    }
+buttons : a -> { events    : Signal a
+               , button : a -> Element -> Element }
+buttons def = let hovs = I.hoverables def
+              in { events    = keepWhen Mouse.isDown def hovs.events
+                 , button = \v -> hovs.hoverable (const v)
+                 }
 
-scs = clickables Nothing
+scs = buttons Nothing
 
-ele n = scs.clickable (Just n) (asText n)
+ele n = scs.button (Just n) (asText n)
 celm = constant . ele
 
 main = flow down <~ (combine <|

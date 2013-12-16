@@ -10,6 +10,8 @@ type Position = { x : Int, y : Int }
 type GameState = { board    : Board
                  , curGuess : [Position] }
 
+data Msg = Square Position Char
+
 main = render startState
 
 -- Initial
@@ -21,17 +23,23 @@ startBoard = [ ['a', 'b', 'c']
 startState = { board = startBoard
              , curGuess = []}             
 
-boardButtons : Board -> { events  : Signal (Maybe (Position, Char))
-                        , squares : (Position -> Char -> Element) -> [[ Element ]] }
-boardButtons bd =
-  let btns = I.clickables Nothing
-      mkButton mkElt p c =
-        let elt = mkElt p c in
-        btns.clickable (Just (p,c)) elt
-      squares mkElt = mapWithIndex (mkButton mkElt) bd
-  in { btns - clickable | squares = squares }
+-- boardButtons : Board
+--                -> { events  : Signal (Maybe a)
+--                   , button  : a -> Element -> Element 
+--  }
+-- boardButtons bd =
+--   let btns = I.clickables Nothing
+--       square p c = btns.button (Just (p, c))
+--   in { btns - clickable | button = square }
 
 -- Update
+interpret : Msg -> GameState -> GameState
+interpret m = case m of
+  Square p c -> squareClick p c
+
+squareClick : Position -> Char -> GameState -> GameState
+squareClick pos c st = { st | curGuess <- consNew pos st.curGuess }
+
 member x xs = case xs of
   []        -> False
   (y :: ys) -> if (x == y)
@@ -43,28 +51,23 @@ consNew p ps = if member p ps
                then ps
                else p :: ps
 
-step : (Maybe (Position, Char)) -> GameState -> GameState
-step press st = case press of
-  Nothing       -> st
-  Just (pos, c) -> { st | curGuess <- consNew pos st.curGess }
-
 -- Display
 render : GameState -> Signal Element
-render init = let btns = boardButtons init.board 
-                  state = foldp step init btns.events
+render init = let btns = I.buttons Nothing
+                  state = foldp (maybe id interpret) init (btns.events)
               in
-  flow down <~ combine [ constant <| flow down . map (flow right) <| btns.squares renderButton
-                       , constant <| asText init.curGuess
-                       , state]
+  flow down <~ combine [ renderBoard btns.button <~ state
+                       , asText <~ btns.events
+                       , asText <~ state]
 
-toElement : Board -> Element
-toElement = flow down . map (flow right . map asText)
+renderBoard : (Maybe Msg -> Element -> Element) -> GameState -> Element
+renderBoard but = let mkBut p c =  but (Just (Square p c)) (renderButton c) in 
+  flow down . map (flow right) . mapWithIndex mkBut . .board
 
-posToPair : Position -> (Int, Int)
-posToPair p = (p.x, p.y)
-
-renderButton : Position -> Char -> Element
-renderButton _ c = plainText . singleton <| c
+renderButton : Char -> Element
+renderButton c = collage 50 50 [ toForm . plainText . singleton <| c
+                               , outlined (solid black) (square 25)
+                               ]
 
 -- Utility
 singleton : Char -> String
@@ -76,3 +79,5 @@ mapWithIndex f bd =
       inner x cs = zipWith (\y c -> f {x = x, y = y} c) [0..max] cs in
   zipWith inner [0..max] bd
 
+maybeMap : (a -> b) -> Maybe a -> Maybe b
+maybeMap f = maybe Nothing (Just . f)
