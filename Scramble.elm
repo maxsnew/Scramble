@@ -1,7 +1,12 @@
 module Main where
 
+import Graphics.Input as GI
 import Input as I
 import String
+
+-- Main
+main = startGame startState
+
 
 type Board = [[Char]]
 type Position = { x : Int, y : Int }
@@ -10,9 +15,8 @@ type Position = { x : Int, y : Int }
 type GameState = { board    : Board
                  , curGuess : [Position] }
 
-data Msg = Square Position Char
-
-main = render startState
+data Msg = Tile Position Char
+         | Reset
 
 -- Initial
 startBoard : Board
@@ -23,19 +27,13 @@ startBoard = [ ['a', 'b', 'c']
 startState = { board = startBoard
              , curGuess = []}             
 
--- boardButtons : Board
---                -> { events  : Signal (Maybe a)
---                   , button  : a -> Element -> Element 
---  }
--- boardButtons bd =
---   let btns = I.clickables Nothing
---       square p c = btns.button (Just (p, c))
---   in { btns - clickable | button = square }
-
 -- Update
+plainButton = fst . GI.button
+
 interpret : Msg -> GameState -> GameState
-interpret m = case m of
-  Square p c -> squareClick p c
+interpret m g = case m of
+  Tile p c -> squareClick p c g
+  Reset    -> { g | curGuess <- [] }
 
 squareClick : Position -> Char -> GameState -> GameState
 squareClick pos c st = { st | curGuess <- consNew pos st.curGuess }
@@ -52,22 +50,24 @@ consNew p ps = if member p ps
                else p :: ps
 
 -- Display
-render : GameState -> Signal Element
-render init = let btns = I.buttons Nothing
-                  state = foldp (maybe id interpret) init (btns.events)
-              in
-  flow down <~ combine [ renderBoard btns.button <~ state
-                       , asText <~ btns.events
+startGame : GameState -> Signal Element
+startGame init = 
+  let btns         = I.buttons Nothing
+      button m e = btns.button (Just m) e
+      state        = foldp (maybe id interpret) init (btns.events) in
+  flow down <~ combine [ renderBoard button <~ state
+                       , constant <| button Reset (plainButton "Reset")
                        , asText <~ state]
 
-renderBoard : (Maybe Msg -> Element -> Element) -> GameState -> Element
-renderBoard but = let mkBut p c =  but (Just (Square p c)) (renderButton c) in 
+renderBoard : (Msg -> Element -> Element) -> GameState -> Element
+renderBoard but = let mkBut p c =  but (Tile p c) (tileButton c) in 
   flow down . map (flow right) . mapWithIndex mkBut . .board
 
-renderButton : Char -> Element
-renderButton c = collage 50 50 [ toForm . plainText . singleton <| c
-                               , outlined (solid black) (square 25)
-                               ]
+tileButton : Char -> Element
+tileButton c = let s = 50 in 
+  collage s s [ toForm . plainText . singleton <| c
+              , outlined (solid black) (square s)
+              ]
 
 -- Utility
 singleton : Char -> String
@@ -79,5 +79,4 @@ mapWithIndex f bd =
       inner x cs = zipWith (\y c -> f {x = x, y = y} c) [0..max] cs in
   zipWith inner [0..max] bd
 
-maybeMap : (a -> b) -> Maybe a -> Maybe b
-maybeMap f = maybe Nothing (Just . f)
+
