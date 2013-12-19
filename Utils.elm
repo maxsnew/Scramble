@@ -1,4 +1,4 @@
-module Utils (member, remove, (>>=))
+module Utils (member, remove, (>>=), foldMap)
        where
 
 member : a -> [a] -> Bool
@@ -12,6 +12,12 @@ remove x xs = case xs of
 
 (>>=) : [a] -> (a -> [b]) -> [b]
 xs >>= k = foldr ((++) . k) [] xs
+
+join : [[a]] -> [a]
+join = foldr (++) []
+
+foldMap : (a -> [b]) -> [a] -> [b]
+foldMap f = join . map f
 
 main = asText <|
        [1,2,3] >>= \x ->

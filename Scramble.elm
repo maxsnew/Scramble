@@ -12,6 +12,9 @@ import open Utils
 debug : Bool
 debug = True
 
+minWordLen : Int
+minWordLen = 1
+
 -- Main
 main = startGame <| startState start3
 
@@ -20,11 +23,13 @@ type GameState = { board          : Board
                  , curGuess       : [(Position, Char)]
                  , score          : Int
                  , correctGuesses : [String]
+                 , response       : Maybe String
                  }
 
 data Msg = Tile Position Char
          | Reset
          | ChangeBoard Board
+         | Guess
 
 -- Initial
 start2 = B.make <| [ ['a', 'b']
@@ -44,25 +49,46 @@ start5 = B.make <|
 words : S.Set String
 words = S.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
                    , "let", "not", "note", "eat", "ate", "pen", "ten"
-                   , "con", "cone", "geld", "tan"
+                   , "con", "cone", "geld", "tan", "if", "bed"
                    ]
 
 startState : Board -> GameState
-startState b = { board = b
-               , curGuess = []
-               , score = 0
+startState b = { board          = b
+               , curGuess       = []
+               , score          = 0
                , correctGuesses = []
+               , response       = Nothing
                }
 
 -- Update
 interpret : Msg -> GameState -> GameState
 interpret m g = case m of
-  Tile p c -> squareClick p c g
-  Reset    -> { g | curGuess <- [] }
-  ChangeBoard b -> { g | board <- b }
+  Tile p c -> { g | curGuess <- tilePress (p, c) g.curGuess
+                  , response <- Nothing }
+  Reset    -> { g | curGuess <- [], response <- Nothing }
+  ChangeBoard b -> { g | board <- b
+                       , response <- Just "New game"
+                       , score <- 0 }
+  Guess    -> let guess = extractGuess g
+              in if (not . String.isEmpty <| guess) && guess `S.member` words
+                 then { g | score <- g.score + score guess
+                          , correctGuesses <- guess :: g.correctGuesses
+                          , curGuess <- []
+                          , response <- Just "Correct!"
+                      }
+                 else { g | response <- Just <| "Invalid word: " ++ guess }
+
+score : String -> Int
+score = String.length
+
 
 squareClick : Position -> Char -> GameState -> GameState
 squareClick pos c st = { st | curGuess <- tilePress (pos, c) st.curGuess }
+
+expandQ c = if c == 'q' then ['q', 'u'] else [c]
+                  
+extractGuess : GameState -> String
+extractGuess = String.fromList . foldMap (expandQ . snd) . reverse . .curGuess
 
 -- Display
 startGame : GameState -> Signal Element
@@ -74,7 +100,7 @@ startGame init =
       msgs = merge btns.events pbtns.events
       state        = foldp (maybe id interpret) init msgs
 
-      currentGuess = String.fromList . reverse . map snd . .curGuess <~ state
+      currentGuess = extractGuess <~ state
 
       debugOut = if debug
                  then [ asText <~ btns.events , asText <~ state ]
@@ -82,12 +108,23 @@ startGame init =
   in 
    flow down <~ (combine <|
   [ beside <~ (renderBoard button <~ state)
-            ~ (plainText <~ (String.append "Current Guess: " <~ currentGuess))
+            ~ (renderStatus <~ state)
+  , pButton Guess "Guess"
   , pButton Reset "Clear"
   ]
   ++
   debugOut)
-                       
+
+toList : Maybe a -> [a]
+toList = maybe [] (\x -> [x])
+
+renderStatus : GameState -> Element
+renderStatus g = let withPre s = plainText . String.append s in 
+  flow down <|
+  [ (withPre "Current Guess: " . extractGuess <| g)
+  , (withPre "Score: " . show . .score <| g)
+  ] ++ (map plainText . toList . .response <| g)
+
 renderBoard : (Msg -> Element -> Element) -> GameState -> Element
 renderBoard but = let mkBut p c =  but (Tile p c) (tileButton c) in 
   flow down . map (flow right) . map (map (uncurry mkBut)) . B.unB . .board
