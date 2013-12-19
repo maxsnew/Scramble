@@ -13,11 +13,8 @@ main = startGame <| startState start3
 type GameState = { board    : Board
                  , curGuess : [(Position, Char)] }
 
-data Rot = Clock | CtrClock           
-
 data Msg = Tile Position Char
          | Reset
-         | Rotate Rot
          | ChangeBoard Board
 
 -- Initial
@@ -38,16 +35,11 @@ start5 = B.make <|
 startState b = { board = b, curGuess = [] }
 
 -- Update
-plainButton = fst . GI.button
-
 interpret : Msg -> GameState -> GameState
 interpret m g = case m of
   Tile p c -> squareClick p c g
   Reset    -> { g | curGuess <- [] }
   ChangeBoard b -> { g | board <- b }
-  Rotate r -> case r of
-    Clock    -> { g | board <- rotateR g.board }
-    CtrClock -> { g | board <- rotateL g.board }
 
 squareClick : Position -> Char -> GameState -> GameState
 squareClick pos c st = { st | curGuess <- tilePress (pos, c) st.curGuess }
@@ -55,14 +47,15 @@ squareClick pos c st = { st | curGuess <- tilePress (pos, c) st.curGuess }
 -- Display
 startGame : GameState -> Signal Element
 startGame init = 
-  let btns         = I.buttons Nothing
+  let btns  = I.buttons Nothing
+      pbtns = GI.buttons Nothing
+      pButton m = constant . pbtns.button (Just m)
       button m e = btns.button (Just m) e
-      state        = foldp (maybe id interpret) init (btns.events)
-      pButton m s = constant . button m . plainButton <| s in
+      msgs = merge btns.events pbtns.events
+      state        = foldp (maybe id interpret) init msgs
+  in 
   flow down <~ combine [ renderBoard button <~ state
-                       , pButton Reset             "Reset"
-                       , pButton (Rotate Clock)    "Clockwise"
-                       , pButton (Rotate CtrClock) "Counter-Clockwise"
+                       , pButton Reset                "Reset"
                        , pButton (ChangeBoard start2) "Change 2"
                        , pButton (ChangeBoard start3) "Change 3"
                        , pButton (ChangeBoard start5) "Change 5"
