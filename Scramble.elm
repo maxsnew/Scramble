@@ -82,10 +82,7 @@ startGame init =
    flow down <~ (combine <|
   [ beside <~ (renderBoard button <~ state)
             ~ (plainText <~ (String.append "Current Guess: " <~ currentGuess))
-  , pButton Reset                "Reset"
-  , pButton (ChangeBoard start2) "Change 2"
-  , pButton (ChangeBoard start3) "Change 3"
-  , pButton (ChangeBoard start5) "Change 5"
+  , pButton Reset "Clear"
   ]
   ++
   debugOut)
