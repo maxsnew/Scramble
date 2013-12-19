@@ -1,9 +1,16 @@
-module Board (make, unB, rotateR, rotateL)
+module Board (make, unB, rotateR, rotateL, neighbor)
        where
+
+import open Utils
 
 data Board = B [[(Position, Char)]]
 -- Boards are assumed to be nxn for some n
 type Position = { x : Int, y : Int }
+
+cX : (Int -> Int) -> Position -> Position
+cX f p = { p | x <- f p.x }
+cY : (Int -> Int) -> Position -> Position
+cY f p = { p | y <- f p.y }
 
 unB : Board -> [[(Position, Char)]]
 unB (B b) = b
@@ -24,3 +31,16 @@ rotateR (B b) = let base = repeat (length b) []
 rotateL : Board -> Board
 rotateL (B b) = let base = repeat (length b) []
                 in B . foldr (zipWith (::)) base . map reverse <| b
+
+neighbor : Position -> Position -> Bool
+neighbor p1 p2 = (p1 /= p2) && (member p2 <| neighbors p1)
+
+neighbors : Position -> [Position]
+neighbors p = let add1 n = n + 1
+                  sub1 n =  n - 1
+                  trans  = [add1, sub1, id]
+                  transX = map cX trans
+                  transY = map cY trans
+              in transX >>= \t1 ->
+              transY >>= \t2 ->
+              [t1 . t2 <| p]

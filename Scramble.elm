@@ -2,11 +2,12 @@ module Main where
 
 import Graphics.Input as GI
 import Set as S
+import String
 
 import open Board
 import Board as B
 import Input as I
-import String
+import open Utils
 
 debug : Bool
 debug = True
@@ -98,15 +99,6 @@ tileButton c = let s = 50 in
               ]
 
 -- Utility
-neighbor : Position -> Position -> Bool
-neighbor p1 p2 = True
-
-member x xs = case xs of
-  []        -> False
-  (y :: ys) -> if (x == y)
-               then True
-               else member x ys
-
 tilePress : (Position, Char) -> [(Position, Char)] -> [(Position, Char)]
 tilePress p ps = case ps of
   []         -> [p]
