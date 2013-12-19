@@ -76,9 +76,9 @@ renderBoard but = let mkBut p c =  but (Tile p c) (tileButton p c) in
 
 tileButton : Position -> Char -> Element
 tileButton p c = let s = 150 in 
-  collage s s [ toForm <| above (asText p) (plainText . singleton <| c)
-              , outlined (solid black) (square s)
-              ]
+  collage s (s `div` 2) [ toForm <| above (asText p) (plainText . singleton <| c)
+                        , outlined (solid black) (square s)
+                        ]
 
 -- Utility
 neighbor : Position -> Position -> Bool
