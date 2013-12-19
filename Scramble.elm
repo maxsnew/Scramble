@@ -1,17 +1,25 @@
 module Main where
 
+import Graphics.Input as GI
+import Set as S
+
 import open Board
 import Board as B
-import Graphics.Input as GI
 import Input as I
 import String
+
+debug : Bool
+debug = True
 
 -- Main
 main = startGame <| startState start3
 
 -- Model
-type GameState = { board    : Board
-                 , curGuess : [(Position, Char)] }
+type GameState = { board          : Board
+                 , curGuess       : [(Position, Char)]
+                 , score          : Int
+                 , correctGuesses : [String]
+                 }
 
 data Msg = Tile Position Char
          | Reset
@@ -32,7 +40,18 @@ start5 = B.make <|
          , ['f', 'g', 'l', 't', 'v']
          , ['f', 'd', 'e', 'a', 't'] ]
 
-startState b = { board = b, curGuess = [] }
+words : S.Set String
+words = S.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
+                   , "let", "not", "note", "eat", "ate", "pen", "ten"
+                   , "con", "cone", "geld", "tan"
+                   ]
+
+startState : Board -> GameState
+startState b = { board = b
+               , curGuess = []
+               , score = 0
+               , correctGuesses = []
+               }
 
 -- Update
 interpret : Msg -> GameState -> GameState
@@ -53,25 +72,33 @@ startGame init =
       button m e = btns.button (Just m) e
       msgs = merge btns.events pbtns.events
       state        = foldp (maybe id interpret) init msgs
-  in 
-  flow down <~ combine [ renderBoard button <~ state
-                       , pButton Reset                "Reset"
-                       , pButton (ChangeBoard start2) "Change 2"
-                       , pButton (ChangeBoard start3) "Change 3"
-                       , pButton (ChangeBoard start5) "Change 5"
-                       , asText <~ btns.events
-                       , asText <~ state
-                       ]
 
+      currentGuess = String.fromList . reverse . map snd . .curGuess <~ state
+
+      debugOut = if debug
+                 then [ asText <~ btns.events , asText <~ state ]
+                 else []
+  in 
+   flow down <~ (combine <|
+  [ beside <~ (renderBoard button <~ state)
+            ~ (plainText <~ (String.append "Current Guess: " <~ currentGuess))
+  , pButton Reset                "Reset"
+  , pButton (ChangeBoard start2) "Change 2"
+  , pButton (ChangeBoard start3) "Change 3"
+  , pButton (ChangeBoard start5) "Change 5"
+  ]
+  ++
+  debugOut)
+                       
 renderBoard : (Msg -> Element -> Element) -> GameState -> Element
-renderBoard but = let mkBut p c =  but (Tile p c) (tileButton p c) in 
+renderBoard but = let mkBut p c =  but (Tile p c) (tileButton c) in 
   flow down . map (flow right) . map (map (uncurry mkBut)) . B.unB . .board
 
-tileButton : Position -> Char -> Element
-tileButton p c = let s = 150 in 
-  collage s (s `div` 2) [ toForm <| above (asText p) (plainText . singleton <| c)
-                        , outlined (solid black) (square s)
-                        ]
+tileButton : Char -> Element
+tileButton c = let s = 50 in 
+  collage s s [ toForm . plainText . singleton <| c
+              , outlined (solid black) (square (s / 2))
+              ]
 
 -- Utility
 neighbor : Position -> Position -> Bool
