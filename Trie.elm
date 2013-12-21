@@ -14,7 +14,7 @@ insert = insert' . S.toList
 insert' : [Char] -> Trie -> Trie
 insert' cs (Node b d) = case cs of 
   []        -> Node True d
-  (c :: cs') -> let updater m = case m of
+  (c :: cs') -> let updater m = Just <| case m of
                       Nothing -> insert' cs' empty
                       Just t' -> insert' cs' t'
                 in Node b . D.update c updater <| d

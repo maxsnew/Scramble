@@ -103,7 +103,8 @@ startGame init =
       currentGuess = extractGuess <~ state
 
       debugOut = if debug
-                 then [ asText <~ btns.events , asText <~ state ]
+                 then [ asText <~ btns.events
+                      , asText <~ state ]
                  else []
   in 
    flow down <~ (combine <|
