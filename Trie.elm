@@ -30,5 +30,4 @@ member' cs (Node b d) = case cs of
   []        -> b
   (c :: cs) -> maybe False (member' cs) <| D.lookup c d
 
-main = asText <| compare empty empty
-       -- . member "a" . insert "a" <| empty
+main = asText . member "a" . insert "a" <| empty
