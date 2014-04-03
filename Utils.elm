@@ -10,6 +10,7 @@ remove x xs = case xs of
                then ys
                else y :: (remove x ys)
 
+-- List monad ops
 (>>=) : [a] -> (a -> [b]) -> [b]
 xs >>= k = foldr ((++) . k) [] xs
 
