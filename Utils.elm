@@ -1,4 +1,4 @@
-module Utils (member, remove, (>>=), foldMap)
+module Utils (member, remove, (>>=), foldMap, (?>>=))
        where
 
 member : a -> [a] -> Bool
@@ -20,7 +20,15 @@ join = foldr (++) []
 foldMap : (a -> [b]) -> [a] -> [b]
 foldMap f = join . map f
 
-main = asText <|
-       [1,2,3] >>= \x ->
-       [4,5,6] >>= \y ->
-       [(x,y)]
+-- Maybe monad
+(?>>=) : Maybe a -> (a -> Maybe b) -> Maybe b
+mx ?>>= k =
+    case mx of
+      Nothing -> Nothing
+      Just x  -> k x
+
+(=<<?) : (a -> Maybe b) -> Maybe a -> Maybe b
+(=<<?) = flip (?>>=)
+
+(<~?) : (a -> b) -> Maybe a -> Maybe b
+f <~? m = (Just . f) =<<? m

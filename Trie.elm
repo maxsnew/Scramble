@@ -3,6 +3,8 @@ module Trie where
 import Dict as D
 import String as S
 
+import Utils ((=<<?))
+    
 data Trie = Node Bool (D.Dict Char Trie)
 
 empty : Trie
@@ -30,4 +32,8 @@ member' cs (Node b d) = case cs of
   []        -> b
   (c :: cs) -> maybe False (member' cs) <| D.lookup c d
 
-main = asText . member "a" . insert "a" <| empty
+suffixes : [Char] -> Trie -> Maybe Trie
+suffixes cs t = foldr (\c mt -> suffixes' c =<<? mt) (Just t) cs
+
+suffixes' : Char -> Trie -> Maybe Trie
+suffixes' c (Node _ d) = D.lookup c d

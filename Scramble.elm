@@ -6,6 +6,8 @@ import String
 
 import Board (..)
 import Board as B
+import Trie (Trie)
+import Trie
 import Utils (..)
 
 debug : Bool
@@ -15,7 +17,7 @@ minWordLen : Int
 minWordLen = 1
 
 -- Main
-main = startGame <| startState start3
+main = startGame <| startState start5 words
 
 -- Model
 type GameState = { board          : Board
@@ -23,6 +25,8 @@ type GameState = { board          : Board
                  , score          : Int
                  , correctGuesses : [String]
                  , response       : Maybe String
+                 , dictionary     : Trie
+                 , dictTail       : Maybe Trie
                  }
 
 data Msg = Tile Position Char
@@ -45,41 +49,52 @@ start5 = B.make <|
          , ['f', 'g', 'l', 't', 'v']
          , ['f', 'd', 'e', 'a', 't'] ]
 
-words : S.Set String
-words = S.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
-                   , "let", "not", "note", "eat", "ate", "pen", "ten"
-                   , "con", "cone", "geld", "tan", "if", "bed"
-                   ]
+words : Trie
+words = Trie.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
+                      , "let", "not", "note", "eat", "ate", "pen", "ten"
+                      , "con", "cone", "geld", "tan", "if", "bed"
+                      ]
 
-startState : Board -> GameState
-startState b = { board          = b
-               , curGuess       = []
-               , score          = 0
-               , correctGuesses = []
-               , response       = Nothing
-               }
+startState : Board -> Trie -> GameState
+startState b t = { board          = b
+                 , curGuess       = []
+                 , score          = 0
+                 , correctGuesses = []
+                 , response       = Nothing
+                 , dictionary     = t
+                 , dictTail       = Just t
+                 }
 
 -- Update
 interpret : Msg -> GameState -> GameState
 interpret m g = case m of
   Tile p c -> { g | curGuess <- tilePress (p, c) g.curGuess
-                  , response <- Nothing }
-  Reset    -> { g | curGuess <- [], response <- Nothing }
+                  , response <- Nothing
+                  , dictTail <- Trie.suffixes (expandQ c) =<<? g.dictTail
+              }
+  Reset    -> { g | curGuess <- []
+                  , response <- Nothing
+                  , dictTail <- Just g.dictionary
+              }
   ChangeBoard b -> { g | board <- b
                        , response <- Just "New game"
-                       , score <- 0 }
-  Guess    -> let guess = extractGuess g
-              in if (not . String.isEmpty <| guess) && guess `S.member` words
-                 then { g | score <- g.score + score guess
-                          , correctGuesses <- guess :: g.correctGuesses
-                          , curGuess <- []
-                          , response <- Just "Correct!"
-                      }
-                 else { g | response <- Just <| "Invalid word: " ++ guess }
+                       , score <- 0
+                       , dictTail <- Just g.dictionary
+                   }
+  Guess    ->
+      let guess = extractGuess g
+      in 
+        case Trie.member "" <~? g.dictTail of
+          Just True -> { g | score <- g.score + score guess
+                           , correctGuesses <- guess :: g.correctGuesses
+                           , curGuess <- []
+                           , response <- Just "Correct!"
+                           , dictTail <- Just g.dictionary
+                       }
+          _         -> { g | response <- Just <| "Invalid word: " ++ guess }
 
 score : String -> Int
 score = String.length
-
 
 squareClick : Position -> Char -> GameState -> GameState
 squareClick pos c st = { st | curGuess <- tilePress (pos, c) st.curGuess }
