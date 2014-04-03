@@ -9,4 +9,6 @@
   4. [ ] Automatically solve the puzzle
      1. [ ] List monad ftw
      2. [ ] Show solutions
+  5. [ ] Rotate the Board
+  6. [ ] Improve the UI (lol rite)
         
