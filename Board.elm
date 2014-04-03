@@ -1,7 +1,7 @@
 module Board (make, unB, rotateR, rotateL, neighbor)
        where
 
-import open Utils
+import Utils (..)
 
 data Board = B [[(Position, Char)]]
 -- Boards are assumed to be nxn for some n

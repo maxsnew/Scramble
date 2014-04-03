@@ -1,13 +1,12 @@
 module Main where
 
-import Graphics.Input as GI
+import Graphics.Input as I
 import Set as S
 import String
 
-import open Board
+import Board (..)
 import Board as B
-import Input as I
-import open Utils
+import Utils (..)
 
 debug : Bool
 debug = True
@@ -90,28 +89,29 @@ expandQ c = if c == 'q' then ['q', 'u'] else [c]
 extractGuess : GameState -> String
 extractGuess = String.fromList . foldMap (expandQ . snd) . reverse . .curGuess
 
+squaresInput = I.input Nothing
+controlInput = I.input Nothing
+
 -- Display
 startGame : GameState -> Signal Element
 startGame init = 
-  let btns  = I.buttons Nothing
-      pbtns = GI.buttons Nothing
-      pButton m = constant . pbtns.button (Just m)
-      button m e = btns.button (Just m) e
-      msgs = merge btns.events pbtns.events
+  let ctrlBtn m = constant . I.button controlInput.handle (Just m)
+      sqBtn   m e = I.button squaresInput.handle (Just m) e
+      msgs = merge squaresInput.signal controlInput.signal
       state        = foldp (maybe id interpret) init msgs
 
       currentGuess = extractGuess <~ state
 
       debugOut = if debug
-                 then [ asText <~ btns.events
+                 then [ asText <~ squaresInput.signal
                       , asText <~ state ]
                  else []
   in 
    flow down <~ (combine <|
-  [ beside <~ (renderBoard button <~ state)
+  [ beside <~ (renderBoard sqBtn <~ state)
             ~ (renderStatus <~ state)
-  , pButton Guess "Guess"
-  , pButton Reset "Clear"
+  , ctrlBtn Guess "Guess"
+  , ctrlBtn Reset "Clear"
   ]
   ++
   debugOut)
@@ -126,15 +126,9 @@ renderStatus g = let withPre s = plainText . String.append s in
   , (withPre "Score: " . show . .score <| g)
   ] ++ (map plainText . toList . .response <| g)
 
-renderBoard : (Msg -> Element -> Element) -> GameState -> Element
-renderBoard but = let mkBut p c =  but (Tile p c) (tileButton c) in 
+renderBoard : (Msg -> String -> Element) -> GameState -> Element
+renderBoard but = let mkBut p c =  but (Tile p c) (String.cons c "") in 
   flow down . map (flow right) . map (map (uncurry mkBut)) . B.unB . .board
-
-tileButton : Char -> Element
-tileButton c = let s = 50 in 
-  collage s s [ toForm . plainText . singleton <| c
-              , outlined (solid black) (square (s / 2))
-              ]
 
 -- Utility
 tilePress : (Position, Char) -> [(Position, Char)] -> [(Position, Char)]
