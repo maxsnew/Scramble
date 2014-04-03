@@ -1,10 +1,10 @@
 * TODO
-  1. [ ] Keep track of already-used words
+  1. [X] Keep track of already-used words
   2. [ ] Generate Boards
      1. [ ] Make a deterministic enumeration of Boards
      2. [ ] Randomize generation of those Boards
-  3. [ ] Seed with a Dictionary
-     1. [ ] Use Trie to efficiently track word
+  3. [-] Seed with a Dictionary
+     1. [X] Use Trie to efficiently track word
      2. [ ] Get a big dictionary (possibly passed via port)
   4. [ ] Automatically solve the puzzle
      1. [ ] List monad ftw

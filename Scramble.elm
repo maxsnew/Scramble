@@ -23,7 +23,7 @@ main = startGame <| startState start5 words
 type GameState = { board          : Board
                  , curGuess       : [(Position, Char)]
                  , score          : Int
-                 , correctGuesses : [String]
+                 , correctGuesses : Trie
                  , response       : Maybe String
                  , dictionary     : Trie
                  , dictTail       : Maybe Trie
@@ -59,7 +59,7 @@ startState : Board -> Trie -> GameState
 startState b t = { board          = b
                  , curGuess       = []
                  , score          = 0
-                 , correctGuesses = []
+                 , correctGuesses = Trie.empty
                  , response       = Nothing
                  , dictionary     = t
                  , dictTail       = Just t
@@ -83,15 +83,18 @@ interpret m g = case m of
                    }
   Guess    ->
       let guess = extractGuess g
-      in 
-        case Trie.member "" <~? g.dictTail of
-          Just True -> { g | score <- g.score + score guess
-                           , correctGuesses <- guess :: g.correctGuesses
-                           , curGuess <- []
-                           , response <- Just "Correct!"
-                           , dictTail <- Just g.dictionary
-                       }
-          _         -> { g | response <- Just <| "Invalid word: " ++ guess }
+      in
+        if Trie.member guess g.correctGuesses
+        then { g | response <- Just <| "You already guessed: " ++ guess }
+        else 
+            case Trie.member "" <~? g.dictTail of
+              Just True -> { g | score <- g.score + score guess
+                               , correctGuesses <- Trie.insert guess g.correctGuesses
+                               , curGuess <- []
+                               , response <- Just "Correct!"
+                               , dictTail <- Just g.dictionary
+                           }
+              _         -> { g | response <- Just <| "Invalid word: " ++ guess }
 
 score : String -> Int
 score = String.length
