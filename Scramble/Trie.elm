@@ -3,7 +3,7 @@ module Scramble.Trie where
 import Dict as D
 import String as S
 
-import Scramble.Utils ((=<<?))
+import Scramble.Utils (..)
     
 data Trie = Node Bool (D.Dict Char Trie)
 
@@ -21,6 +21,14 @@ insert' cs (Node b d) = case cs of
                       Just t' -> insert' cs' t'
                 in Node b . D.update c updater <| d
 
+toList : Trie -> [String]
+toList (Node b d) = 
+    let curWord = if b then [""] else []
+        restWords =
+            D.toList d >>= \(c, t) ->
+             map (String.cons c) (toList t)
+    in curWord ++ restWords
+    
 fromList : [String] -> Trie
 fromList = foldr insert empty
 
@@ -30,10 +38,10 @@ member = member' . S.toList
 member' : [Char] -> Trie -> Bool
 member' cs (Node b d) = case cs of
   []        -> b
-  (c :: cs) -> maybe False (member' cs) <| D.lookup c d
+  (c :: cs) -> maybe False (member' cs) <| D.get c d
 
 suffixes : [Char] -> Trie -> Maybe Trie
 suffixes cs t = foldr (\c mt -> suffixes' c =<<? mt) (Just t) cs
 
 suffixes' : Char -> Trie -> Maybe Trie
-suffixes' c (Node _ d) = D.lookup c d
+suffixes' c (Node _ d) = D.get c d
