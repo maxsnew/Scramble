@@ -1,0 +1,13 @@
+{ "version": "0.1"
+, "summary": "Scramble"
+, "description": ""
+, "license": "BSD3"
+, "repository": "https://github.com/maxsnew/Scramble.git"
+, "exposed-modules": []
+, "elm-version": "0.12"
+, "dependencies":
+      { "deadfoxygrandpa/Elm-Test": "0.2.4"
+      , "evancz/automaton": "0.1.0.2"
+      , "maxsnew/IO": "0.1.2.0"
+      }
+}
