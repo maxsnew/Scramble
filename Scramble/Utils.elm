@@ -1,4 +1,4 @@
-module Utils (member, remove, (>>=), foldMap, (?>>=))
+module Scramble.Utils (member, remove, (>>=), foldMap, (?>>=))
        where
 
 member : a -> [a] -> Bool

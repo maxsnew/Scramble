@@ -1,4 +1,4 @@
-module Board (make, unB, rotateR, rotateL, neighbor)
+module Scramble.Board (make, unB, rotateR, rotateL, neighbor)
        where
 
 import Utils (..)

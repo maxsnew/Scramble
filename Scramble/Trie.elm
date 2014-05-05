@@ -1,9 +1,9 @@
-module Trie where
+module Scramble.Trie where
 
 import Dict as D
 import String as S
 
-import Utils ((=<<?))
+import Scramble.Utils ((=<<?))
     
 data Trie = Node Bool (D.Dict Char Trie)
 

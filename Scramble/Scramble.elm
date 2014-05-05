@@ -1,14 +1,14 @@
-module Main where
+module Scramble.Main where
 
 import Graphics.Input as I
 import Set as S
 import String
 
-import Board (..)
-import Board as B
-import Trie (Trie)
-import Trie
-import Utils (..)
+import Scramble.Board (..)
+import Scramble.Board as B
+import Scramble.Trie (Trie)
+import Scramble.Trie as Trie
+import Scramble.Utils (..)
 
 debug : Bool
 debug = True
