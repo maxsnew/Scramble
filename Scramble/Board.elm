@@ -1,7 +1,7 @@
 module Scramble.Board (make, unB, rotateR, rotateL, neighbor)
        where
 
-import Utils (..)
+import Scramble.Utils (..)
 
 data Board = B [[(Position, Char)]]
 -- Boards are assumed to be nxn for some n

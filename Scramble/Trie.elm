@@ -3,6 +3,8 @@ module Scramble.Trie where
 import Dict as D
 import String as S
 
+import Scramble.Parser ((>>$), (<|>), (>>=$), expect, eof, sepBy, lowerAlpha, parens)
+import Scramble.Parser as P
 import Scramble.Utils (..)
     
 data Trie = Node Bool (D.Dict Char Trie)
@@ -45,3 +47,31 @@ suffixes cs t = foldr (\c mt -> suffixes' c =<<? mt) (Just t) cs
 
 suffixes' : Char -> Trie -> Maybe Trie
 suffixes' c (Node _ d) = D.get c d
+
+-- | Binary encode/decode
+encode : Trie -> String
+encode (Node b d) = 
+    let bbit = if b then "1" else "0"
+        encPair (c, t) = String.concat [String.fromList [c], "(", encode t , ")"]
+        dbit = String.concat . intersperse "," . map encPair <| D.toList d
+    in String.concat [bbit, dbit]
+
+decode : String -> Maybe Trie
+decode = P.run trieP 0
+
+trieP : P.Parser st Trie
+trieP = (Node `P.map` bitP) `P.ap` dictP
+
+emptyP : P.Parser st Trie
+emptyP = eof >>$ P.pure empty
+
+bitP : P.Parser st Bool
+bitP = (expect '0' >>$ P.pure False) <|> (expect '1' >>$ P.pure True)
+
+dictP : P.Parser st (D.Dict Char Trie)
+dictP = D.fromList `P.map` sepBy entryP (expect ',')
+
+entryP : P.Parser st (Char, Trie)
+entryP = lowerAlpha   >>=$ \c ->
+         parens trieP >>=$ \t ->
+         P.pure (c, t)

@@ -9,6 +9,7 @@ import Scramble.Board as B
 import Scramble.Trie (Trie)
 import Scramble.Trie as Trie
 import Scramble.Utils (..)
+import Scramble.Words (words)
 
 debug : Bool
 debug = True
@@ -49,11 +50,11 @@ start5 = B.make <|
          , ['f', 'g', 'l', 't', 'v']
          , ['f', 'd', 'e', 'a', 't'] ]
 
-words : Trie
-words = Trie.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
-                      , "let", "not", "note", "eat", "ate", "pen", "ten"
-                      , "con", "cone", "geld", "tan", "if", "bed"
-                      ]
+-- words : Trie
+-- words = Trie.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
+--                       , "let", "not", "note", "eat", "ate", "pen", "ten"
+--                       , "con", "cone", "geld", "tan", "if", "bed"
+--                       ]
 
 startState : Board -> Trie -> GameState
 startState b t = { board          = b
@@ -122,7 +123,7 @@ startGame init =
 
       debugOut = if debug
                  then [ asText <~ squaresInput.signal
-                      , asText <~ state ]
+                      , plainText . Trie.encode . .dictionary <~ state ]
                  else []
   in 
    flow down <~ (combine <|
