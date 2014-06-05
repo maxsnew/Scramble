@@ -52,7 +52,7 @@ suffixes' c (Node _ d) = D.get c d
 encode : Trie -> String
 encode (Node b d) = 
     let bbit = if b then "1" else "0"
-        encPair (c, t) = String.concat [String.fromList [c], "(", encode t , ")"]
+        encPair (c, t) = String.concat [String.fromList [c], encode t , ";"]
         dbit = String.concat . intersperse "," . map encPair <| D.toList d
     in String.concat [bbit, dbit]
 
@@ -60,18 +60,28 @@ decode : String -> Maybe Trie
 decode = P.run trieP 0
 
 trieP : P.Parser st Trie
-trieP = (Node `P.map` bitP) `P.ap` dictP
+trieP st = ((Node `P.map` bitP) `P.ap` dictP) st
 
 emptyP : P.Parser st Trie
-emptyP = eof >>$ P.pure empty
+emptyP st = (eof >>$ P.pure empty) st
 
 bitP : P.Parser st Bool
-bitP = (expect '0' >>$ P.pure False) <|> (expect '1' >>$ P.pure True)
+bitP st = (P.char >>=$ \c ->
+               case c of
+                 '0' -> P.pure False
+                 '1' -> P.pure True
+                 _   -> P.fail) st
 
 dictP : P.Parser st (D.Dict Char Trie)
-dictP = D.fromList `P.map` sepBy entryP (expect ',')
+dictP st = (D.fromList `P.map` sepBy (entryP) (expect ',')) st
 
-entryP : P.Parser st (Char, Trie)
-entryP = lowerAlpha   >>=$ \c ->
-         parens trieP >>=$ \t ->
-         P.pure (c, t)
+-- entryP' : () -> P.Parser st (Char, Trie)
+entryP st = (lowerAlpha   >>=$ \c ->
+             trieP        >>=$ \t ->
+             expect ';'   >>$
+             P.pure (c, t)) st
+
+start = fromList ["what", "who", "where", "when", "how", "hoot", "huff"]
+fromJust (Just x) = x
+res = fromJust . decode . encode  <| start
+-- main = asText (start == start)

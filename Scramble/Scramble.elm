@@ -12,7 +12,7 @@ import Scramble.Utils (..)
 import Scramble.Words (words)
 
 debug : Bool
-debug = True
+debug = False
 
 minWordLen : Int
 minWordLen = 1

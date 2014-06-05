@@ -14,7 +14,7 @@ smallCharE = finE . String.toList <| "abcdefghijklmnopqrstuvwxyz"
 stringsE : Enum [String]
 stringsE = manyE <| String.fromList `mapE` manyE smallCharE
 
-trieE : Enum Trie
+trieE : Enum Trie.Trie
 trieE = Trie.fromList `mapE` stringsE
 
 removeDups = Set.toList . Set.fromList
@@ -25,12 +25,15 @@ fromListToListIdTest = { run ss = EnumCheck.expectEq (sort . removeDups <| ss)
                        , src = stringsE
                        }
 
-binaryTest : EnumCheck.Test Trie
-binaryTest = { run t = EnumCheck.expectEq (Just t) (Trie.decode . Trie.encode <| t)
+mmap : (a -> b) -> Maybe a -> Maybe b
+mmap f = maybe Nothing (Just . f)
+
+binaryTest : EnumCheck.Test Trie.Trie
+binaryTest = { run t = EnumCheck.expectEq (Just . Trie.toList <| t) (mmap Trie.toList . Trie.decode . Trie.encode <| t)
              , src = trieE
              }
 
 resultString : Int -> EnumCheck.Test a -> String
-resultString = either id id . EnumCheck.runTest
+resultString n t = either id id <| EnumCheck.runTest n t
 
-main = plainText . resultString 10000 <| fromListToListIdTest
+main = plainText . resultString 1000 <| binaryTest

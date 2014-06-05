@@ -39,11 +39,13 @@ char st = case peek st of
             Nothing -> Fail
             Just c  -> Done c (st += 1)
 
+lowerAlpha : Parser st Char
 lowerAlpha = char >>=$ \c ->
              if isLower c 
              then pure c
              else fail
 
+expect : Char -> Parser st Char
 expect c = char >>=$ \c2 -> 
            if c == c2
            then pure c2
@@ -72,17 +74,17 @@ p1 <|> p2 =
           Fail -> p2 st
           Done a st' -> Done a st'
 
-get : Parser st st
-get st = Done (st.state) st
+-- get : Parser st st
+-- get st = Done (st.state) st
 
-inc : Parser number ()
-inc = modify (\n -> n + 1)
+-- inc : Parser number ()
+-- inc = modify (\n -> n + 1)
 
-dec : Parser number ()
-dec = modify (\n -> n - 1)
+-- dec : Parser number ()
+-- dec = modify (\n -> n - 1)
 
-modify : (st -> st) -> Parser st ()
-modify f st = Done () { st | state <- f st.state }
+-- modify : (st -> st) -> Parser st ()
+-- modify f st = Done () { st | state <- f st.state }
 
 (>>=$) : Parser st a -> (a -> Parser st b) -> Parser st b
 p >>=$ f = 
@@ -115,3 +117,8 @@ sepBy1 : Parser st a -> Parser st sep -> Parser st [a]
 sepBy1 p sep = p >>=$ \x ->
                many (sep >>$ p) >>=$ \xs ->
                pure (x :: xs)
+
+listP = expect '[' >>$
+        ((expect '0' >>$ pure 0) `sepBy` (expect ',')) >>=$ \xs ->
+        expect ']' >>$
+        pure xs
