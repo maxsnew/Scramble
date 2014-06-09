@@ -1,5 +1,6 @@
 module Scramble.Main where
 
+import EnumCheck.Enum as Enum
 import Graphics.Input as I
 import Set as S
 import String
@@ -18,7 +19,7 @@ minWordLen : Int
 minWordLen = 1
 
 -- Main
-main = startGame <| startState start5 words
+main = startGame <| startState start4 words
 
 -- Model
 type GameState = { board          : Board
@@ -42,6 +43,8 @@ start3 = B.make <|
          [ ['a', 'b', 'c']
          , ['d', 'e', 'f']
          , ['g', 'h', 'i'] ]
+
+start4 = Enum.fromNat 0 hardBoards4
 
 start5 = B.make <|
          [ ['t', 'd', 'o', 'a', 'f']
