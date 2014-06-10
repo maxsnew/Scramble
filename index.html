@@ -1,18 +1,16 @@
 <!DOCTYPE HTML>
-<html><head><meta charset="UTF-8"><title>Main</title><script type="text/javascript" src="elm-runtime.js"></script><script type="text/javascript">Elm.Scramble = Elm.Scramble || {};
-Elm.Scramble.Main = Elm.Scramble.Main || {};
-Elm.Scramble.Main.make = function (_elm) {
+<html><head><meta charset="UTF-8"><title>Main</title><script type="text/javascript" src="/home/mnew/code/elm/Elm/.cabal-sandbox/share/x86_64-linux-ghc-7.8.2/Elm-0.12.3/elm-runtime.js"></script><script type="text/javascript">Elm.Main = Elm.Main || {};
+Elm.Main.make = function (_elm) {
    "use strict";
-   _elm.Scramble = _elm.Scramble || {};
-   _elm.Scramble.Main = _elm.Scramble.Main || {};
-   if (_elm.Scramble.Main.values)
-   return _elm.Scramble.Main.values;
+   _elm.Main = _elm.Main || {};
+   if (_elm.Main.values)
+   return _elm.Main.values;
    var _N = Elm.Native,
    _U = _N.Utils.make(_elm),
    _L = _N.List.make(_elm),
    _A = _N.Array.make(_elm),
    _E = _N.Error.make(_elm),
-   $moduleName = "Scramble.Main";
+   $moduleName = "Main";
    var Basics = Elm.Basics.make(_elm);
    var Color = Elm.Color.make(_elm);
    var EnumCheck = EnumCheck || {};
@@ -59,7 +57,7 @@ Elm.Scramble.Main.make = function (_elm) {
                  ,_0: p
                  ,_1: ps};
    });
-   var tilePress = F2(function (p,
+   var validPress = F2(function (p,
    ps) {
       return function () {
          switch (ps.ctor)
@@ -69,20 +67,20 @@ Elm.Scramble.Main.make = function (_elm) {
               p,
               ps._0) && Basics.not(A2(Scramble.Utils.member,
               Basics.fst(p),
-              A2(List.map,
-              Basics.fst,
-              ps))) ? {ctor: "::"
-                      ,_0: p
-                      ,_1: ps} : ps;
-            case "[]":
-            return _L.fromArray([p]);}
+              A2(List.map,Basics.fst,ps)));
+            case "[]": return true;}
          _E.Case($moduleName,
-         "between lines 157 and 161");
+         "between lines 165 and 168");
       }();
    });
+   var renderState = function (st) {
+      return A2(Graphics.Element.flow,
+      Graphics.Element.down,
+      _L.fromArray([Text.asText(st.dictTail)]));
+   };
    var renderGameNo = function (st) {
       return Text.plainText(_L.append("Game #",
-      _L.append(String.show(st.boardI),
+      _L.append(String.show(st.boardI + 1),
       _L.append(" of ",
       String.show(Scramble.EasyWords.max)))));
    };
@@ -121,15 +119,6 @@ Elm.Scramble.Main.make = function (_elm) {
          }(g)))));
       }();
    };
-   var squareClick = F3(function (pos,
-   c,
-   st) {
-      return _U.replace([["curGuess"
-                         ,A2(tilePress,
-                         {ctor: "_Tuple2",_0: pos,_1: c},
-                         st.curGuess)]],
-      st);
-   });
    var score = String.length;
    var startState = F3(function (bs,
    i,
@@ -186,6 +175,7 @@ Elm.Scramble.Main.make = function (_elm) {
                                     g.dictionary))]
                                    ,["response"
                                     ,Maybe.Just("New game!")]
+                                   ,["curGuess",_L.fromArray([])]
                                    ,["score",0]
                                    ,["dictTail"
                                     ,Maybe.Just(g.dictionary)]],
@@ -233,20 +223,27 @@ Elm.Scramble.Main.make = function (_elm) {
                                ,Maybe.Just(g.dictionary)]],
               g);
             case "Tile":
-            return _U.replace([["curGuess"
-                               ,A2(tilePress,
-                               {ctor: "_Tuple2"
-                               ,_0: m._0
-                               ,_1: m._1},
-                               g.curGuess)]
-                              ,["response",Maybe.Nothing]
+            return Basics.not(A2(validPress,
+              {ctor: "_Tuple2"
+              ,_0: m._0
+              ,_1: m._1},
+              g.curGuess)) ? _U.replace([["response"
+                                         ,Maybe.Just("Invalid Move")]],
+              g) : _U.replace([["response"
+                               ,Maybe.Nothing]
+                              ,["curGuess"
+                               ,{ctor: "::"
+                                ,_0: {ctor: "_Tuple2"
+                                     ,_0: m._0
+                                     ,_1: m._1}
+                                ,_1: g.curGuess}]
                               ,["dictTail"
                                ,A2(Scramble.Utils._op["=<<?"],
                                Scramble.Trie.suffixes(expandQ(m._1)),
                                g.dictTail)]],
               g);}
          _E.Case($moduleName,
-         "between lines 61 and 93");
+         "between lines 61 and 97");
       }();
    });
    var renderBoard = function (but) {
@@ -296,7 +293,7 @@ Elm.Scramble.Main.make = function (_elm) {
       };
    };
    var minWordLen = 1;
-   var debug = true;
+   var debug = false;
    var startGame = function (init) {
       return function () {
          var msgs = A2(Signal.merge,
@@ -315,11 +312,7 @@ Elm.Scramble.Main.make = function (_elm) {
                                              Text.asText,
                                              squaresInput.signal)
                                              ,A2(Signal._op["<~"],
-                                             function ($) {
-                                                return Text.asText(function (_) {
-                                                   return _.answers;
-                                                }($));
-                                             },
+                                             renderState,
                                              state)]) : _L.fromArray([]);
          var sqBtn = F2(function (m,e) {
             return A3(Graphics.Input.button,
@@ -368,33 +361,33 @@ Elm.Scramble.Main.make = function (_elm) {
    Scramble.Board.easyBoards4),
    0,
    Scramble.EasyWords.words));
-   _elm.Scramble.Main.values = {_op: _op
-                               ,debug: debug
-                               ,minWordLen: minWordLen
-                               ,main: main
-                               ,startState: startState
-                               ,interpret: interpret
-                               ,score: score
-                               ,squareClick: squareClick
-                               ,expandQ: expandQ
-                               ,extractGuess: extractGuess
-                               ,squaresInput: squaresInput
-                               ,controlInput: controlInput
-                               ,startGame: startGame
-                               ,toList: toList
-                               ,renderGameNo: renderGameNo
-                               ,renderStatus: renderStatus
-                               ,renderBoard: renderBoard
-                               ,tilePress: tilePress
-                               ,consNew: consNew
-                               ,singleton: singleton
-                               ,on: on
-                               ,Tile: Tile
-                               ,Reset: Reset
-                               ,ChangeBoard: ChangeBoard
-                               ,Guess: Guess
-                               ,GameState: GameState};
-   return _elm.Scramble.Main.values;
+   _elm.Main.values = {_op: _op
+                      ,debug: debug
+                      ,minWordLen: minWordLen
+                      ,main: main
+                      ,startState: startState
+                      ,interpret: interpret
+                      ,score: score
+                      ,expandQ: expandQ
+                      ,extractGuess: extractGuess
+                      ,squaresInput: squaresInput
+                      ,controlInput: controlInput
+                      ,startGame: startGame
+                      ,toList: toList
+                      ,renderGameNo: renderGameNo
+                      ,renderStatus: renderStatus
+                      ,renderBoard: renderBoard
+                      ,renderState: renderState
+                      ,validPress: validPress
+                      ,consNew: consNew
+                      ,singleton: singleton
+                      ,on: on
+                      ,Tile: Tile
+                      ,Reset: Reset
+                      ,ChangeBoard: ChangeBoard
+                      ,Guess: Guess
+                      ,GameState: GameState};
+   return _elm.Main.values;
 };Elm.Scramble = Elm.Scramble || {};
 Elm.Scramble.Solver = Elm.Scramble.Solver || {};
 Elm.Scramble.Solver.make = function (_elm) {
@@ -489,7 +482,7 @@ Elm.Scramble.Solver.make = function (_elm) {
                  }();
                case "Nothing": return t1;}
             _E.Case($moduleName,
-            "between lines 30 and 39");
+            "between lines 32 and 41");
          }();
       }();
    });
@@ -568,7 +561,7 @@ Elm.Scramble.Board.make = function (_elm) {
                       break;}
                  break;}
             _E.Case($moduleName,
-            "on line 93, column 36 to 51");
+            "on line 95, column 36 to 51");
          }();
          var b = function () {
             switch (_.ctor)
@@ -591,7 +584,7 @@ Elm.Scramble.Board.make = function (_elm) {
                       break;}
                  break;}
             _E.Case($moduleName,
-            "on line 93, column 36 to 51");
+            "on line 95, column 36 to 51");
          }();
          var c = function () {
             switch (_.ctor)
@@ -614,7 +607,7 @@ Elm.Scramble.Board.make = function (_elm) {
                       break;}
                  break;}
             _E.Case($moduleName,
-            "on line 93, column 36 to 51");
+            "on line 95, column 36 to 51");
          }();
          var d = function () {
             switch (_.ctor)
@@ -638,7 +631,7 @@ Elm.Scramble.Board.make = function (_elm) {
                       break;}
                  break;}
             _E.Case($moduleName,
-            "on line 93, column 36 to 51");
+            "on line 95, column 36 to 51");
          }();
          var e = function () {
             switch (_.ctor)
@@ -662,7 +655,7 @@ Elm.Scramble.Board.make = function (_elm) {
                       break;}
                  break;}
             _E.Case($moduleName,
-            "on line 93, column 36 to 51");
+            "on line 95, column 36 to 51");
          }();
          var f = function () {
             switch (_.ctor)
@@ -686,7 +679,7 @@ Elm.Scramble.Board.make = function (_elm) {
                       break;}
                  break;}
             _E.Case($moduleName,
-            "on line 93, column 36 to 51");
+            "on line 95, column 36 to 51");
          }();
          return {_: {}
                 ,n0: a
@@ -832,7 +825,7 @@ Elm.Scramble.Board.make = function (_elm) {
       return !_U.eq(p1,
       p2) && Scramble.Utils.member(p2)(neighbors(p1));
    });
-   var Position = F2(function (a,
+   var BPosition = F2(function (a,
    b) {
       return {_: {},x: a,y: b};
    });
@@ -844,14 +837,14 @@ Elm.Scramble.Board.make = function (_elm) {
          switch (_v79.ctor)
          {case "B": return _v79._0;}
          _E.Case($moduleName,
-         "on line 19, column 13 to 14");
+         "on line 21, column 13 to 14");
       }();
    };
    var width = function ($) {
       return List.length(unB($));
    };
    var positions = function ($) {
-      return List.map(Basics.fst)(Scramble.Utils.join(unB($)));
+      return List.map(Basics.fst)(List.concat(unB($)));
    };
    var square = function (p) {
       return function ($) {
@@ -931,7 +924,7 @@ Elm.Scramble.Board.make = function (_elm) {
                  base)(_v82._0));
               }();}
          _E.Case($moduleName,
-         "between lines 40 and 41");
+         "between lines 42 and 43");
       }();
    };
    var rotateL = function (_v85) {
@@ -950,7 +943,7 @@ Elm.Scramble.Board.make = function (_elm) {
                  base)(List.map(List.reverse)(_v85._0)));
               }();}
          _E.Case($moduleName,
-         "between lines 44 and 45");
+         "between lines 46 and 47");
       }();
    };
    _elm.Scramble.Board.values = {_op: _op
@@ -976,7 +969,7 @@ Elm.Scramble.Board.make = function (_elm) {
                                 ,hardBoards4: hardBoards4
                                 ,hard4: hard4
                                 ,B: B
-                                ,Position: Position
+                                ,BPosition: BPosition
                                 ,Cube: Cube};
    return _elm.Scramble.Board.values;
 };Elm.EnumCheck = Elm.EnumCheck || {};
@@ -2215,7 +2208,7 @@ Elm.Scramble.Utils.make = function (_elm) {
             case "Nothing":
             return Maybe.Nothing;}
          _E.Case($moduleName,
-         "between lines 25 and 27");
+         "between lines 22 and 24");
       }();
    });
    _op["=<<?"] = Basics.flip(F2(function (x,
@@ -2229,14 +2222,9 @@ Elm.Scramble.Utils.make = function (_elm) {
       },
       m);
    });
-   var join = A2(List.foldr,
-   F2(function (x,y) {
-      return _L.append(x,y);
-   }),
-   _L.fromArray([]));
    var foldMap = function (f) {
       return function ($) {
-         return join(List.map(f)($));
+         return List.concat(List.map(f)($));
       };
    };
    _op[">>="] = F2(function (xs,
@@ -2274,7 +2262,6 @@ Elm.Scramble.Utils.make = function (_elm) {
    _elm.Scramble.Utils.values = {_op: _op
                                 ,member: member
                                 ,remove: remove
-                                ,join: join
                                 ,foldMap: foldMap};
    return _elm.Scramble.Utils.values;
-};</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Scramble.Main)</script><noscript></noscript></body></html>
+};</script></head><body><script type="text/javascript">Elm.fullscreen(Elm.Main)</script><noscript></noscript></body></html>
