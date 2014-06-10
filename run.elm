@@ -12,14 +12,13 @@ import Scramble.Words (words)
 
 console : IO ()
 console = putStrLn "Go!" >>= 
-          \_ -> loop 1002 Trie.empty >>
+          \_ -> loop 0 Trie.empty >>
           putStrLn "\7"
 
 modulus : Int
-modulus = 1000
+modulus = 100
 
 board = easyBoards4
-
 max : Int
 max = toInt board.size
 

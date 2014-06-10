@@ -1,9 +1,10 @@
-module Scramble.Board (make, width, positions, unB, square, rotateR, rotateL, neighbor, neighbors, hardBoards4, easyBoards4)
+module Scramble.Board --(make, width, positions, unB, square, rotateR, rotateL, neighbor, neighbors, hardBoards4, easyBoards4)
        where
 
 import Scramble.Utils (..)
 
-import EnumCheck.Enum (..)
+import EnumCheck.Enum   (..)
+import EnumCheck.ExtNat (..)
 
 data Board = B [[(Position, Char)]]
 -- Boards are assumed to be nxn for some n
@@ -98,7 +99,8 @@ fromString s = let [a,b,c,d,e,f] = String.toList s
                   , n5 = f
                   }
 
-easyBoards4 = boardsE easy4
+easyBoards4 = let rawE = boardsE easy4
+              in everyE (floor ((toFloat . toInt <| rawE.size) / 1000)) rawE
 easy4 = map (fromString . String.toLower) [ "AAEEGN"
                                           , "ELRTTY"
                                           , "AOOTTW"
