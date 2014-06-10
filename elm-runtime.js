@@ -429,15 +429,27 @@ Elm.Native.Array.make = function(elm) {
     }
 
     function foldl(f, b, a) {
-      for (var i = 0; i < a.table.length; i++) {
-        b = A2(f, a.height == 0 ? a.table[i] : foldl(f, b, a.table[i]), b);
+      if (a.height == 0) {
+        for (var i = 0; i < a.table.length; i++) {
+          b = A2(f, a.table[i], b);
+        }
+      } else {
+        for (var i = 0; i < a.table.length; i++) {
+          b = foldl(f, b, a.table[i]);
+        }
       }
       return b;
     }
 
     function foldr(f, b, a) {
-      for (var i = a.table.length; i--; ) {
-        b = A2(f, a.height == 0 ? a.table[i] : foldr(f, b, a.table[i]), b);
+      if (a.height == 0) {
+        for (var i = a.table.length; i--; ) {
+          b = A2(f, a.table[i], b);
+        }
+      } else {
+        for (var i = a.table.length; i--; ) {
+          b = foldl(f, b, a.table[i]);
+        }
       }
       return b;
     }
@@ -519,9 +531,11 @@ Elm.Native.Array.make = function(elm) {
     // TODO: Add support for appending trees of different sizes. Current
     // behavior will just rise the lower tree and then append them.
     function append(a,b) {
-      if (b.height > a.height) { return append(parentise(a, b.height), b); }
-      if (a.height > b.height) { return append(a, parentise(b, a.height)); }
-      if (a.height == 0) { return append(parentise(a, 1), parentise(b, 1)); }
+      if (a.table.length == 0) return b;
+      if (b.table.length == 0) return a;
+      if (b.height > a.height) return append(parentise(a, b.height), b);
+      if (a.height > b.height) return append(a, parentise(b, a.height));
+      if (a.height == 0)       return append(parentise(a, 1), parentise(b, 1));
 
       var c = append_(a, b);
       if (c[1].table.length > 0) {
@@ -1687,6 +1701,16 @@ Elm.Native.List.make = function(elm) {
         return false;
     }
 
+    function zip(xs, ys) {
+        var arr = [];
+        while (xs.ctor !== '[]' && ys.ctor !== '[]') {
+            arr.push(Utils.Tuple2(xs._0, ys._0));
+            xs = xs._1;
+            ys = ys._1;
+        }
+        return fromArray(arr);
+    }
+
     function zipWith(f, xs, ys) {
         var arr = [];
         while (xs.ctor !== '[]' && ys.ctor !== '[]') {
@@ -1697,12 +1721,47 @@ Elm.Native.List.make = function(elm) {
         return fromArray(arr);
     }
 
-    function zip(xs, ys) {
+    function zipWith3(f, xs, ys, zs) {
         var arr = [];
-        while (xs.ctor !== '[]' && ys.ctor !== '[]') {
-            arr.push(Utils.Tuple2(xs._0, ys._0));
+        while (xs.ctor !== '[]' && ys.ctor !== '[]' && zs.ctor !== '[]') {
+            arr.push(A3(f, xs._0, ys._0, zs._0));
             xs = xs._1;
             ys = ys._1;
+            zs = zs._1;
+        }
+        return fromArray(arr);
+    }
+
+    function zipWith4(f, ws, xs, ys, zs) {
+        var arr = [];
+        while (   ws.ctor !== '[]'
+               && xs.ctor !== '[]'
+               && ys.ctor !== '[]'
+               && zs.ctor !== '[]')
+        {
+            arr.push(A4(f, ws._0, xs._0, ys._0, zs._0));
+            ws = ws._1;
+            xs = xs._1;
+            ys = ys._1;
+            zs = zs._1;
+        }
+        return fromArray(arr);
+    }
+
+    function zipWith5(f, vs, ws, xs, ys, zs) {
+        var arr = [];
+        while (   vs.ctor !== '[]'
+               && ws.ctor !== '[]'
+               && xs.ctor !== '[]'
+               && ys.ctor !== '[]'
+               && zs.ctor !== '[]')
+        {
+            arr.push(A5(f, vs._0, ws._0, xs._0, ys._0, zs._0));
+            vs = vs._1;
+            ws = ws._1;
+            xs = xs._1;
+            ys = ys._1;
+            zs = zs._1;
         }
         return fromArray(arr);
     }
@@ -1816,7 +1875,10 @@ Elm.Native.List.make = function(elm) {
 
         all:F2(all),
         any:F2(any),
-        zipWith:F3(zipWith),
+        zipWith :F3(zipWith ),
+        zipWith3:F4(zipWith3),
+        zipWith4:F5(zipWith4),
+        zipWith5:F6(zipWith5),
         zip:F2(zip),
         sort:sort,
         sortBy:F2(sortBy),
@@ -2176,6 +2238,8 @@ Elm.Native.Char.make = function(elm) {
     elm.Native.Char = elm.Native.Char || {};
     if (elm.Native.Char.values) return elm.Native.Char.values;
 
+    var Utils = Elm.Native.Utils.make(elm);
+
     function isBetween(lo,hi) { return function(chr) {
 	var c = chr.charCodeAt(0);
 	return lo <= c && c <= hi;
@@ -2188,10 +2252,10 @@ Elm.Native.Char.make = function(elm) {
     return elm.Native.Char.values = {
         fromCode : function(c) { return String.fromCharCode(c); },
         toCode   : function(c) { return c.toUpperCase().charCodeAt(0); },
-        toUpper  : function(c) { return c.toUpperCase(); },
-        toLower  : function(c) { return c.toLowerCase(); },
-        toLocaleUpper : function(c) { return c.toLocaleUpperCase(); },
-        toLocaleLower : function(c) { return c.toLocaleLowerCase(); },
+        toUpper  : function(c) { return Utils.chr(c.toUpperCase()); },
+        toLower  : function(c) { return Utils.chr(c.toLowerCase()); },
+        toLocaleUpper : function(c) { return Utils.chr(c.toLocaleUpperCase()); },
+        toLocaleLower : function(c) { return Utils.chr(c.toLocaleLowerCase()); },
         isLower    : isBetween('a'.charCodeAt(0),'z'.charCodeAt(0)),
         isUpper    : isBetween('A'.charCodeAt(0),'Z'.charCodeAt(0)),
         isDigit    : isDigit,
@@ -3103,7 +3167,7 @@ Elm.Native.WebSocket.make = function(elm) {
   var List = Elm.Native.List.make(elm);
 
   function open(url, outgoing) {
-    var incoming = Signal.constant(List.Nil);
+    var incoming = Signal.constant("");
     var ws = new WebSocket(url);
 
     var pending = [];
@@ -4369,7 +4433,7 @@ Elm.Dict.make = function (_elm) {
                                                          ,lgot
                                                          ," "
                                                          ,rgot
-                                                         ,"\nPlease report this bug to https://github.com/evancz/Elm/issues"])));
+                                                         ,"\nPlease report this bug to https://github.com/elm-lang/Elm/issues"])));
    });
    var ensureBlackRoot = function (t) {
       return function () {
@@ -6861,7 +6925,40 @@ Elm.List.make = function (_elm) {
    var drop = Native.List.drop;
    var take = Native.List.take;
    var join = Native.List.join;
+   var zipWith5 = Native.List.zipWith5;
+   var zipWith4 = Native.List.zipWith4;
+   var zipWith3 = Native.List.zipWith3;
    var zipWith = Native.List.zipWith;
+   var zip5 = Native.List.zipWith5(F5(function (v0,
+   v1,
+   v2,
+   v3,
+   v4) {
+      return {ctor: "_Tuple5"
+             ,_0: v0
+             ,_1: v1
+             ,_2: v2
+             ,_3: v3
+             ,_4: v4};
+   }));
+   var zip4 = Native.List.zipWith4(F4(function (v0,
+   v1,
+   v2,
+   v3) {
+      return {ctor: "_Tuple4"
+             ,_0: v0
+             ,_1: v1
+             ,_2: v2
+             ,_3: v3};
+   }));
+   var zip3 = Native.List.zipWith3(F3(function (v0,
+   v1,
+   v2) {
+      return {ctor: "_Tuple3"
+             ,_0: v0
+             ,_1: v1
+             ,_2: v2};
+   }));
    var zip = Native.List.zip;
    var concat = Native.List.concat;
    var any = Native.List.any;
@@ -6933,7 +7030,7 @@ Elm.List.make = function (_elm) {
                                                        ,_0: x
                                                        ,_1: _v1._1}};}
                _E.Case($moduleName,
-               "between lines 175 and 177");
+               "between lines 184 and 186");
             }();
          });
          return A2(foldr,
@@ -6960,10 +7057,10 @@ Elm.List.make = function (_elm) {
                                    ,_0: _v5._1
                                    ,_1: _v6._1}};}
                     _E.Case($moduleName,
-                    "on line 203, column 32 to 44");
+                    "on line 230, column 32 to 44");
                  }();}
             _E.Case($moduleName,
-            "on line 203, column 32 to 44");
+            "on line 230, column 32 to 44");
          }();
       });
       return A2(foldr,
@@ -6996,7 +7093,7 @@ Elm.List.make = function (_elm) {
             case "[]":
             return _L.fromArray([]);}
          _E.Case($moduleName,
-         "between lines 220 and 227");
+         "between lines 247 and 254");
       }();
    });
    _elm.List.values = {_op: _op
@@ -7026,7 +7123,13 @@ Elm.List.make = function (_elm) {
                       ,minimum: minimum
                       ,partition: partition
                       ,zip: zip
+                      ,zip3: zip3
+                      ,zip4: zip4
+                      ,zip5: zip5
                       ,zipWith: zipWith
+                      ,zipWith3: zipWith3
+                      ,zipWith4: zipWith4
+                      ,zipWith5: zipWith5
                       ,unzip: unzip
                       ,join: join
                       ,intersperse: intersperse
@@ -8173,7 +8276,7 @@ function init(display, container, module, ports, moduleToReplace) {
           throw new Error(
               'The notify function has been called synchronously!\n' +
               'This can lead to frames being dropped.\n' +
-              'Definitely report this to <https://github.com/evancz/Elm/issues>\n');
+              'Definitely report this to <https://github.com/elm-lang/Elm/issues>\n');
       }
       updateInProgress = true;
       var timestep = Date.now();
