@@ -12,7 +12,7 @@ import Scramble.Solver (solve)
 import Scramble.Trie (Trie)
 import Scramble.Trie as Trie
 import Scramble.Utils (..)
-import Scramble.EasyWords (words)
+import Scramble.EasyWords (words, max)
 
 debug : Bool
 debug = True
@@ -21,7 +21,7 @@ minWordLen : Int
 minWordLen = 1
 
 -- Main
-main = startGame <| startState easyBoards4 0 words
+main = startGame <| startState (Enum.takeE max easyBoards4) 0 words
 
 -- Model
 type GameState = { board          : Board
@@ -38,14 +38,8 @@ type GameState = { board          : Board
 
 data Msg = Tile Position Char
          | Reset
-         | ChangeBoard Board
+         | ChangeBoard Int
          | Guess
-
--- words : Trie
--- words = Trie.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
---                       , "let", "not", "note", "eat", "ate", "pen", "ten"
---                       , "con", "cone", "geld", "tan", "if", "bed"
---                       ]
 
 startState : Enum Board -> Int -> Trie -> GameState
 startState bs i t = 
@@ -73,11 +67,16 @@ interpret m g = case m of
                   , response <- Nothing
                   , dictTail <- Just g.dictionary
               }
-  ChangeBoard b -> { g | board <- b
-                       , response <- Just "New game"
-                       , score <- 0
-                       , dictTail <- Just g.dictionary
-                   }
+  ChangeBoard i -> 
+      let i' = (g.boardI + i) `mod` max
+          b  = Enum.fromNat i' g.boards
+      in { g | board    <- b
+             , boardI   <- i'
+             , answers  <- Trie.toList <| solve b g.dictionary
+             , response <- Just "New game!"
+             , score    <- 0
+             , dictTail <- Just g.dictionary
+         }
   Guess    ->
       let guess = extractGuess g
       in
@@ -125,16 +124,22 @@ startGame init =
                  else []
   in 
    flow down <~ (combine <|
-  [ beside <~ (renderBoard sqBtn <~ state)
+  [ renderGameNo <~ state
+  , beside <~ (renderBoard sqBtn <~ state)
             ~ (renderStatus <~ state)
   , ctrlBtn Guess "Guess"
   , ctrlBtn Reset "Clear"
+  , beside <~ ctrlBtn (ChangeBoard -1) "←"
+            ~ ctrlBtn (ChangeBoard  1) "→"
   ]
   ++
   debugOut)
 
 toList : Maybe a -> [a]
 toList = maybe [] (\x -> [x])
+
+renderGameNo : GameState -> Element
+renderGameNo st = plainText <| ("Game #" ++ show st.boardI ++ " of " ++ show max)
 
 renderStatus : GameState -> Element
 renderStatus g = let withPre s = plainText . String.append s in 
