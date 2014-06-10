@@ -1,4 +1,4 @@
-module Scramble.Main where
+module Main where
 
 import EnumCheck.Enum as Enum
 import EnumCheck.Enum (Enum)
@@ -12,23 +12,23 @@ import Scramble.Solver (solve)
 import Scramble.Trie (Trie)
 import Scramble.Trie as Trie
 import Scramble.Utils (..)
-import Scramble.EasyWords (words, max)
+import Scramble.EasyWords as Words
 
 debug : Bool
-debug = True
+debug = False
 
 minWordLen : Int
 minWordLen = 1
 
 -- Main
-main = startGame <| startState (Enum.takeE max easyBoards4) 0 words
+main = startGame <| startState (Enum.takeE Words.max easyBoards4) 0 Words.words
 
 -- Model
 type GameState = { board          : Board
                  , boards         : Enum Board
                  , boardI         : Int
                  , answers        : [String]
-                 , curGuess       : [(Position, Char)]
+                 , curGuess       : [(BPosition, Char)]
                  , score          : Int
                  , correctGuesses : Trie
                  , response       : Maybe String
@@ -36,7 +36,7 @@ type GameState = { board          : Board
                  , dictTail       : Maybe Trie
                  }
 
-data Msg = Tile Position Char
+data Msg = Tile BPosition Char
          | Reset
          | ChangeBoard Int
          | Guess
@@ -59,21 +59,25 @@ startState bs i t =
 -- Update
 interpret : Msg -> GameState -> GameState
 interpret m g = case m of
-  Tile p c -> { g | curGuess <- tilePress (p, c) g.curGuess
-                  , response <- Nothing
-                  , dictTail <- Trie.suffixes (expandQ c) =<<? g.dictTail
-              }
+  Tile p c -> 
+    if not <| validPress (p, c) g.curGuess
+    then { g | response <- Just "Invalid Move" }
+    else { g | response <- Nothing
+             , curGuess <- (p, c) :: g.curGuess
+             , dictTail <- Trie.suffixes (expandQ c) =<<? g.dictTail
+         }
   Reset    -> { g | curGuess <- []
                   , response <- Nothing
                   , dictTail <- Just g.dictionary
               }
   ChangeBoard i -> 
-      let i' = (g.boardI + i) `mod` max
+      let i' = (g.boardI + i) `mod` Words.max
           b  = Enum.fromNat i' g.boards
       in { g | board    <- b
              , boardI   <- i'
              , answers  <- Trie.toList <| solve b g.dictionary
              , response <- Just "New game!"
+             , curGuess <- []
              , score    <- 0
              , dictTail <- Just g.dictionary
          }
@@ -95,9 +99,7 @@ interpret m g = case m of
 score : String -> Int
 score = String.length
 
-squareClick : Position -> Char -> GameState -> GameState
-squareClick pos c st = { st | curGuess <- tilePress (pos, c) st.curGuess }
-
+expandQ : Char -> [Char]
 expandQ c = if c == 'q' then ['q', 'u'] else [c]
                   
 extractGuess : GameState -> String
@@ -118,8 +120,7 @@ startGame init =
 
       debugOut = if debug
                  then [ asText <~ squaresInput.signal
-                      , asText . .answers <~ state
---                      , plainText . Trie.encode . .dictionary <~ state 
+                      , renderState <~ state
                       ]
                  else []
   in 
@@ -139,7 +140,7 @@ toList : Maybe a -> [a]
 toList = maybe [] (\x -> [x])
 
 renderGameNo : GameState -> Element
-renderGameNo st = plainText <| ("Game #" ++ show st.boardI ++ " of " ++ show max)
+renderGameNo st = plainText <| ("Game #" ++ show (st.boardI+1) ++ " of " ++ show Words.max)
 
 renderStatus : GameState -> Element
 renderStatus g = let withPre s = plainText . String.append s in 
@@ -152,15 +153,20 @@ renderBoard : (Msg -> String -> Element) -> GameState -> Element
 renderBoard but = let mkBut p c =  but (Tile p c) (String.cons c "") in 
   flow down . map (flow right) . map (map (uncurry mkBut)) . B.unB . .board
 
--- Utility
-tilePress : (Position, Char) -> [(Position, Char)] -> [(Position, Char)]
-tilePress p ps = case ps of
-  []         -> [p]
-  p' :: _  -> if ((neighbor `on` fst) p p' && not (member (fst p) (map fst ps)))
-              then p :: ps
-              else ps
+-- | For debugging
+renderState : GameState -> Element
+renderState st = flow down [
+                  asText <| st.dictTail
+                 ]
 
-consNew : Position -> [Position] -> [Position]
+-- Utility
+validPress : (BPosition, Char) -> [(BPosition, Char)] -> Bool
+validPress p ps = 
+  case ps of
+    []      -> True
+    p' :: _ -> (neighbor `on` fst) p p' && not (member (fst p) (map fst ps))
+    
+consNew : BPosition -> [BPosition] -> [BPosition]
 consNew p ps = if member p ps
                then ps
                else p :: ps

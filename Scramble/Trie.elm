@@ -1,7 +1,7 @@
 module Scramble.Trie where
 
 import Dict as D
-import String as S
+import String
 
 import Scramble.Parser ((>>$), (<|>), (>>=$), expect, eof, sepBy, lowerAlpha, parens)
 import Scramble.Parser as P
@@ -13,7 +13,7 @@ empty : Trie
 empty = Node False D.empty
 
 insert : String -> Trie -> Trie
-insert = insert' . S.toList
+insert = insert' . String.toList
 
 insert' : [Char] -> Trie -> Trie
 insert' cs (Node b d) = case cs of 
@@ -41,7 +41,7 @@ fromList : [String] -> Trie
 fromList = foldr insert empty
 
 member : String -> Trie -> Bool
-member = member' . S.toList
+member = member' . String.toList
 
 member' : [Char] -> Trie -> Bool
 member' cs (Node b d) = case cs of

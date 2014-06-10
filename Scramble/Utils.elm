@@ -13,11 +13,8 @@ remove x xs = case xs of
 (>>=) : [a] -> (a -> [b]) -> [b]
 xs >>= k = foldr ((++) . k) [] xs
 
-join : [[a]] -> [a]
-join = foldr (++) []
-
 foldMap : (a -> [b]) -> [a] -> [b]
-foldMap f = join . map f
+foldMap f = concat . map f
 
 -- Maybe monad
 (?>>=) : Maybe a -> (a -> Maybe b) -> Maybe b

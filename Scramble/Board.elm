@@ -1,30 +1,32 @@
 module Scramble.Board --(make, width, positions, unB, square, rotateR, rotateL, neighbor, neighbors, hardBoards4, easyBoards4)
        where
 
+import String
+
 import Scramble.Utils (..)
 
 import EnumCheck.Enum   (..)
 import EnumCheck.ExtNat (..)
 
-data Board = B [[(Position, Char)]]
+data Board = B [[(BPosition, Char)]]
 -- Boards are assumed to be nxn for some n
-type Position = { x : Int, y : Int }
+type BPosition = { x : Int, y : Int }
 
-cX : (Int -> Int) -> Position -> Position
+cX : (Int -> Int) -> BPosition -> BPosition
 cX f p = { p | x <- f p.x }
-cY : (Int -> Int) -> Position -> Position
+cY : (Int -> Int) -> BPosition -> BPosition
 cY f p = { p | y <- f p.y }
 
-unB : Board -> [[(Position, Char)]]
+unB : Board -> [[(BPosition, Char)]]
 unB (B b) = b
 
 width : Board -> Int
 width = length . unB
 
-positions : Board -> [Position]
-positions = map fst . join . unB
+positions : Board -> [BPosition]
+positions = map fst . concat . unB
 
-square : Position -> Board -> Char
+square : BPosition -> Board -> Char
 square p = snd . nth p.x . nth p.y . unB
 
 tiles : Board -> [[Char]]
@@ -44,10 +46,10 @@ rotateL : Board -> Board
 rotateL (B b) = let base = repeat (length b) []
                 in B . foldr (zipWith (::)) base . map reverse <| b
 
-neighbor : Position -> Position -> Bool
+neighbor : BPosition -> BPosition -> Bool
 neighbor p1 p2 = (p1 /= p2) && (member p2 <| neighbors p1)
 
-neighbors : Position -> [Position]
+neighbors : BPosition -> [BPosition]
 neighbors p = let add1 n = n + 1
                   sub1 n =  n - 1
                   trans  = [add1, sub1, id]
