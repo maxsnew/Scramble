@@ -3,3 +3,4 @@ build/
 cache/
 \#*
 elm_dependencies/*
+node_modules/
