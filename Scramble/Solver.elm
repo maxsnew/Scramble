@@ -1,6 +1,5 @@
 module Scramble.Solver where
 
-import Char
 import Set
 import Set (Set)
 
@@ -24,7 +23,7 @@ solveAt : Board
           -> Trie         -- ^ valid words here
           -> Trie
 solveAt b visited curP t = 
-  let c  = Char.toLower <| square curP b
+  let c  = square curP b
       wC = String.cons c ""
       t1 = Trie.fromList <| if Trie.member wC t then [wC] else []
       mayT2 = Trie.suffixes' c t

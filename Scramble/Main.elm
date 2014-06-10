@@ -8,24 +8,26 @@ import String
 
 import Scramble.Board (..)
 import Scramble.Board as B
+import Scramble.Solver (solve)
 import Scramble.Trie (Trie)
 import Scramble.Trie as Trie
 import Scramble.Utils (..)
---import Scramble.Words (words)
+import Scramble.Words (words)
 
 debug : Bool
-debug = False
+debug = True
 
 minWordLen : Int
 minWordLen = 1
 
 -- Main
-main = startGame <| startState hardBoards4 0 words
+main = startGame <| startState easyBoards4 0 words
 
 -- Model
 type GameState = { board          : Board
                  , boards         : Enum Board
                  , boardI         : Int
+                 , answers        : [String]
                  , curGuess       : [(Position, Char)]
                  , score          : Int
                  , correctGuesses : Trie
@@ -39,27 +41,26 @@ data Msg = Tile Position Char
          | ChangeBoard Board
          | Guess
 
--- Initial
-start4 = Enum.fromNat 0 hardBoards4
-
-words : Trie
-words = Trie.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
-                      , "let", "not", "note", "eat", "ate", "pen", "ten"
-                      , "con", "cone", "geld", "tan", "if", "bed"
-                      ]
-
+-- words : Trie
+-- words = Trie.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
+--                       , "let", "not", "note", "eat", "ate", "pen", "ten"
+--                       , "con", "cone", "geld", "tan", "if", "bed"
+--                       ]
 
 startState : Enum Board -> Int -> Trie -> GameState
-startState bs i t = { boards         = bs
-                    , board          = Enum.fromNat i bs
-                    , boardI         = i
-                    , curGuess       = []
-                    , score          = 0
-                    , correctGuesses = Trie.empty
-                    , response       = Nothing
-                    , dictionary     = t
-                    , dictTail       = Just t
-                    }
+startState bs i t = 
+  let b = Enum.fromNat i bs
+  in { boards         = bs
+     , board          = Enum.fromNat i bs
+     , boardI         = i
+     , answers        = Trie.toList <| solve b t
+     , curGuess       = []
+     , score          = 0
+     , correctGuesses = Trie.empty
+     , response       = Nothing
+     , dictionary     = t
+     , dictTail       = Just t
+     }
 
 -- Update
 interpret : Msg -> GameState -> GameState
@@ -118,7 +119,9 @@ startGame init =
 
       debugOut = if debug
                  then [ asText <~ squaresInput.signal
-                      , plainText . Trie.encode . .dictionary <~ state ]
+                      , asText . .answers <~ state
+--                      , plainText . Trie.encode . .dictionary <~ state 
+                      ]
                  else []
   in 
    flow down <~ (combine <|
