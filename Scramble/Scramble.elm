@@ -1,6 +1,7 @@
 module Scramble.Main where
 
 import EnumCheck.Enum as Enum
+import EnumCheck.Enum (Enum)
 import Graphics.Input as I
 import Set as S
 import String
@@ -10,7 +11,7 @@ import Scramble.Board as B
 import Scramble.Trie (Trie)
 import Scramble.Trie as Trie
 import Scramble.Utils (..)
-import Scramble.Words (words)
+--import Scramble.Words (words)
 
 debug : Bool
 debug = False
@@ -19,10 +20,12 @@ minWordLen : Int
 minWordLen = 1
 
 -- Main
-main = startGame <| startState start4 words
+main = startGame <| startState hardBoards4 0 words
 
 -- Model
 type GameState = { board          : Board
+                 , boards         : Enum Board
+                 , boardI         : Int
                  , curGuess       : [(Position, Char)]
                  , score          : Int
                  , correctGuesses : Trie
@@ -37,37 +40,26 @@ data Msg = Tile Position Char
          | Guess
 
 -- Initial
-start2 = B.make <| [ ['a', 'b']
-                   , ['c', 'd'] ]
-start3 = B.make <|
-         [ ['a', 'b', 'c']
-         , ['d', 'e', 'f']
-         , ['g', 'h', 'i'] ]
-
 start4 = Enum.fromNat 0 hardBoards4
 
-start5 = B.make <|
-         [ ['t', 'd', 'o', 'a', 'f']
-         , ['l', 'n', 't', 'c', 'n']
-         , ['x', 'e', 't', 'p', 'e']
-         , ['f', 'g', 'l', 't', 'v']
-         , ['f', 'd', 'e', 'a', 't'] ]
+words : Trie
+words = Trie.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
+                      , "let", "not", "note", "eat", "ate", "pen", "ten"
+                      , "con", "cone", "geld", "tan", "if", "bed"
+                      ]
 
--- words : Trie
--- words = Trie.fromList ["a", "to", "dot", "fan", "vat", "late", "cot", "fib"
---                       , "let", "not", "note", "eat", "ate", "pen", "ten"
---                       , "con", "cone", "geld", "tan", "if", "bed"
---                       ]
 
-startState : Board -> Trie -> GameState
-startState b t = { board          = b
-                 , curGuess       = []
-                 , score          = 0
-                 , correctGuesses = Trie.empty
-                 , response       = Nothing
-                 , dictionary     = t
-                 , dictTail       = Just t
-                 }
+startState : Enum Board -> Int -> Trie -> GameState
+startState bs i t = { boards         = bs
+                    , board          = Enum.fromNat i bs
+                    , boardI         = i
+                    , curGuess       = []
+                    , score          = 0
+                    , correctGuesses = Trie.empty
+                    , response       = Nothing
+                    , dictionary     = t
+                    , dictTail       = Just t
+                    }
 
 -- Update
 interpret : Msg -> GameState -> GameState

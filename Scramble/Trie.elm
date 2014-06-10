@@ -23,6 +23,9 @@ insert' cs (Node b d) = case cs of
                       Just t' -> insert' cs' t'
                 in Node b . D.update c updater <| d
 
+union : Trie -> Trie -> Trie
+union t1 t2 = foldr insert t2 (toList t1)
+
 toList : Trie -> [String]
 toList (Node b d) = 
     let curWord = if b then [""] else []

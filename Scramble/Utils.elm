@@ -20,13 +20,6 @@ join = foldr (++) []
 foldMap : (a -> [b]) -> [a] -> [b]
 foldMap f = join . map f
 
-perms : [a] -> [[a]]
-perms xs = case xs of
-             [] -> [[]]
-             _  -> xs                  >>= \x ->
-                   perms (remove x xs) >>= \ys ->
-                   [x :: ys]
-
 -- Maybe monad
 (?>>=) : Maybe a -> (a -> Maybe b) -> Maybe b
 mx ?>>= k =

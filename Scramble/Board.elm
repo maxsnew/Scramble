@@ -58,11 +58,26 @@ type Cube a = { n0 : a
 toSides : Cube a -> [a]
 toSides c = [c.n0, c.n1, c.n2, c.n3, c.n4, c.n5]
 
-rolls : Cube a -> Enum a
-rolls = finE . toSides
+nth : Int -> [a] -> a
+nth n = head . drop n
 
-boards : [Cube Char] -> Enum Board
-boards = mapE (make . map toSides) . finE . perms
+matrify : [a] -> [[a]]
+matrify xs = 
+  let l = floor . sqrt . toFloat . length <| xs
+      loop xs rows = 
+          case xs of
+            [] -> reverse rows
+            _  -> let row  = take l xs
+                      rest = drop l xs
+                  in loop rest (row :: rows)
+  in loop xs []
+
+boardsE : [Cube Char] -> Enum Board
+boardsE cubes = 
+  let assemble = zipWith (\choice cube -> nth choice (toSides cube))
+      choices = (listE (repeat (length cubes) (takeE 6 natE)))
+      toBoard = make . matrify
+  in toBoard `mapE` (assemble `mapE` choices `apE` (permsE cubes))
 
 fromString : String -> Cube Char
 fromString s = let [a,b,c,d,e,f] = String.toList s
@@ -74,7 +89,7 @@ fromString s = let [a,b,c,d,e,f] = String.toList s
                   , n5 = f
                   }
 
-easyBoards4 = boards easy4
+easyBoards4 = boardsE easy4
 easy4 = map fromString [ "AAEEGN"
                        , "ELRTTY"
                        , "AOOTTW"
@@ -93,7 +108,7 @@ easy4 = map fromString [ "AAEEGN"
                        , "DEILRX"
                        ]
 
-hardBoards4 = boards hard4
+hardBoards4 = boardsE hard4
 hard4 = map fromString [ "AACIOT"
                        , "AHMORS"
                        , "EGKLUY"
