@@ -12,7 +12,7 @@ import Scramble.Solver (solve)
 import Scramble.Trie (Trie)
 import Scramble.Trie as Trie
 import Scramble.Utils (..)
-import Scramble.Words (words)
+import Scramble.EasyWords (words)
 
 debug : Bool
 debug = True
