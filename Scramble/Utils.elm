@@ -1,5 +1,4 @@
-module Scramble.Utils (member, remove, (>>=), foldMap, (?>>=), perms)
-       where
+module Scramble.Utils where
 
 member : a -> [a] -> Bool
 member x = foldr (\y b -> b || x == y) False

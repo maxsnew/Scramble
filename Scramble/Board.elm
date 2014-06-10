@@ -1,4 +1,4 @@
-module Scramble.Board (make, unB, rotateR, rotateL, neighbor, hardBoards4, easyBoards4)
+module Scramble.Board (make, width, positions, unB, square, rotateR, rotateL, neighbor, neighbors, hardBoards4, easyBoards4)
        where
 
 import Scramble.Utils (..)
@@ -16,6 +16,15 @@ cY f p = { p | y <- f p.y }
 
 unB : Board -> [[(Position, Char)]]
 unB (B b) = b
+
+width : Board -> Int
+width = length . unB
+
+positions : Board -> [Position]
+positions = map fst . join . unB
+
+square : Position -> Board -> Char
+square p = snd . nth p.x . nth p.y . unB
 
 tiles : Board -> [[Char]]
 tiles = map (map snd) . unB

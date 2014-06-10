@@ -26,6 +26,9 @@ insert' cs (Node b d) = case cs of
 union : Trie -> Trie -> Trie
 union t1 t2 = foldr insert t2 (toList t1)
 
+unions : [Trie] -> Trie
+unions = foldr union empty
+
 toList : Trie -> [String]
 toList (Node b d) = 
     let curWord = if b then [""] else []
@@ -50,6 +53,9 @@ suffixes cs t = foldr (\c mt -> suffixes' c =<<? mt) (Just t) cs
 
 suffixes' : Char -> Trie -> Maybe Trie
 suffixes' c (Node _ d) = D.get c d
+
+prefixWith : Char -> Trie -> Trie
+prefixWith c d = Node False (D.fromList [(c, d)])
 
 -- | Binary encode/decode
 encode : Trie -> String
