@@ -1,6 +1,7 @@
 module Scramble.Trie where
 
 import Dict as D
+import Maybe (Maybe(..), maybe)
 import String
 
 import Scramble.Parser ((>>$), (<|>), (>>=$), expect, eof, sepBy, lowerAlpha, parens)

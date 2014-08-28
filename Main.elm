@@ -3,6 +3,7 @@ module Main where
 import EnumCheck.Enum as Enum
 import EnumCheck.Enum (Enum)
 import Graphics.Input as I
+import Maybe (Maybe(..), maybe)
 import Set as S
 import String
 
