@@ -13,7 +13,7 @@ import Scramble.Utils (..)
 solve : Board           -- ^ Scramble board
         -> Trie         -- ^ Input Dictionary
         -> Trie
-solve b t = Trie.unions . map (\pos -> solveAt b Set.empty pos t) <| B.positions b
+solve b t = Trie.unions << map (\pos -> solveAt b Set.empty pos t) <| B.positions b
             
 
 toTup : BPosition -> (Int, Int)
@@ -34,7 +34,7 @@ solveAt b visited curP t =
        Just t2 ->
            let w = B.width b
                goodNeighbor p = p.x >= 0 && p.x < w && p.y >= 0 && p.y < w && not (toTup p `Set.member` visited)
-               goodNeighbors  = filter goodNeighbor . B.neighbors <| curP
+               goodNeighbors  = filter goodNeighbor << B.neighbors <| curP
                goNext pos = solveAt b (Set.insert (toTup pos) visited) pos t2
                ts = map goNext goodNeighbors
                t' = Trie.unions ts

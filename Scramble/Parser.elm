@@ -62,7 +62,7 @@ mapRes f res = case res of
                  Fail -> Fail
 
 map : (a -> b) -> Parser st a -> Parser st b
-map f p = mapRes f . p
+map f p = mapRes f << p
 
 ap : Parser st (a -> b) -> Parser st a -> Parser st b
 ap p1 p2 = p1 >>=$ \ f -> p2 >>=$ \ x -> pure (f x)

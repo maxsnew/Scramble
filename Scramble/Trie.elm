@@ -14,7 +14,7 @@ empty : Trie
 empty = Node False D.empty
 
 insert : String -> Trie -> Trie
-insert = insert' . String.toList
+insert = insert' << String.toList
 
 insert' : [Char] -> Trie -> Trie
 insert' cs (Node b d) = case cs of 
@@ -22,7 +22,7 @@ insert' cs (Node b d) = case cs of
   (c :: cs') -> let updater m = Just <| case m of
                       Nothing -> insert' cs' empty
                       Just t' -> insert' cs' t'
-                in Node b . D.update c updater <| d
+                in Node b << D.update c updater <| d
 
 union : Trie -> Trie -> Trie
 union t1 t2 = foldr insert t2 (toList t1)
@@ -42,7 +42,7 @@ fromList : [String] -> Trie
 fromList = foldr insert empty
 
 member : String -> Trie -> Bool
-member = member' . String.toList
+member = member' << String.toList
 
 member' : [Char] -> Trie -> Bool
 member' cs (Node b d) = case cs of
@@ -63,7 +63,7 @@ encode : Trie -> String
 encode (Node b d) = 
     let bbit = if b then "1" else "0"
         encPair (c, t) = String.concat [String.fromList [c], encode t , ";"]
-        dbit = String.concat . intersperse "," . map encPair <| D.toList d
+        dbit = String.concat << intersperse "," << map encPair <| D.toList d
     in String.concat [bbit, dbit]
 
 decode : String -> Maybe Trie
@@ -93,5 +93,5 @@ entryP st = (lowerAlpha   >>=$ \c ->
 
 start = fromList ["what", "who", "where", "when", "how", "hoot", "huff"]
 fromJust (Just x) = x
-res = fromJust . decode . encode  <| start
+res = fromJust << decode << encode  <| start
 -- main = asText (start == start)

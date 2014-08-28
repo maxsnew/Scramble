@@ -1,7 +1,11 @@
 module Main where
 
+import BigInt (BigInt)
+import BigInt as I
+import BigInt.Convenient as BI
 import EnumCheck.Enum as Enum
 import EnumCheck.Enum (Enum)
+import EnumCheck.ExtNat as EN
 import Graphics.Input as I
 import Maybe (Maybe(..), maybe)
 import Set as S
@@ -22,12 +26,12 @@ minWordLen : Int
 minWordLen = 1
 
 -- Main
-main = startGame <| startState (Enum.takeE Words.max easyBoards4) 0 Words.words
+main = startGame <| startState (Enum.takeE Words.max easyBoards4) BI.zero Words.words
 
 -- Model
 type GameState = { board          : Board
                  , boards         : Enum Board
-                 , boardI         : Int
+                 , boardI         : BigInt
                  , answers        : [String]
                  , curGuess       : [(BPosition, Char)]
                  , score          : Int
@@ -39,10 +43,10 @@ type GameState = { board          : Board
 
 data Msg = Tile BPosition Char
          | Reset
-         | ChangeBoard Int
+         | ChangeBoard BigInt
          | Guess
 
-startState : Enum Board -> Int -> Trie -> GameState
+startState : Enum Board -> BigInt -> Trie -> GameState
 startState bs i t = 
   let b = Enum.fromNat i bs
   in { boards         = bs
@@ -72,16 +76,18 @@ interpret m g = case m of
                   , dictTail <- Just g.dictionary
               }
   ChangeBoard i -> 
-      let i' = (g.boardI + i) `mod` Words.max
+      let i' = (g.boardI `I.add` i) `I.mod` (EN.toBigInt << .size <| g.boards)
           b  = Enum.fromNat i' g.boards
-      in { g | board    <- b
-             , boardI   <- i'
-             , answers  <- Trie.toList <| solve b g.dictionary
-             , response <- Just "New game!"
-             , curGuess <- []
-             , score    <- 0
-             , dictTail <- Just g.dictionary
-         }
+      in if | I.lt i' I.zero -> Native.Error.Raise "that shit ain't right"
+            | otherwise           ->
+                { g | board    <- b
+                    , boardI   <- i'
+                    , answers  <- Trie.toList <| solve b g.dictionary
+                    , response <- Just "New game!"
+                    , curGuess <- []
+                    , score    <- 0
+                    , dictTail <- Just g.dictionary
+                    }
   Guess    ->
       let guess = extractGuess g
       in
@@ -104,7 +110,7 @@ expandQ : Char -> [Char]
 expandQ c = if c == 'q' then ['q', 'u'] else [c]
                   
 extractGuess : GameState -> String
-extractGuess = String.fromList . foldMap (expandQ . snd) . reverse . .curGuess
+extractGuess = String.fromList << foldMap (expandQ << snd) << reverse << .curGuess
 
 squaresInput = I.input Nothing
 controlInput = I.input Nothing
@@ -112,10 +118,10 @@ controlInput = I.input Nothing
 -- Display
 startGame : GameState -> Signal Element
 startGame init = 
-  let ctrlBtn m = constant . I.button controlInput.handle (Just m)
+  let ctrlBtn m = constant << I.button controlInput.handle (Just m)
       sqBtn   m e = I.button squaresInput.handle (Just m) e
       msgs = merge squaresInput.signal controlInput.signal
-      state        = foldp (maybe id interpret) init msgs
+      state        = foldp (maybe identity interpret) init msgs
 
       currentGuess = extractGuess <~ state
 
@@ -131,8 +137,8 @@ startGame init =
             ~ (renderStatus <~ state)
   , ctrlBtn Guess "Guess"
   , ctrlBtn Reset "Clear"
-  , beside <~ ctrlBtn (ChangeBoard -1) "←"
-            ~ ctrlBtn (ChangeBoard  1) "→"
+  , beside <~ ctrlBtn (ChangeBoard (I.negate BI.one)) "←"
+            ~ ctrlBtn (ChangeBoard           BI.one)  "→"
   ]
   ++
   debugOut)
@@ -141,18 +147,18 @@ toList : Maybe a -> [a]
 toList = maybe [] (\x -> [x])
 
 renderGameNo : GameState -> Element
-renderGameNo st = plainText <| ("Game #" ++ show (st.boardI+1) ++ " of " ++ show Words.max)
+renderGameNo st = plainText <| ("Game #" ++ I.toString (I.inc st.boardI) ++ " of " ++ (I.toString << EN.toBigInt << .size <| st.boards))
 
 renderStatus : GameState -> Element
-renderStatus g = let withPre s = plainText . String.append s in 
+renderStatus g = let withPre s = plainText << String.append s in 
   flow down <|
-  [ (withPre "Current Guess: " . extractGuess <| g)
-  , (withPre "Score: " . show . .score <| g)
-  ] ++ (map plainText . toList . .response <| g)
+  [ (withPre "Current Guess: " << extractGuess <| g)
+  , (withPre "Score: " << show << .score <| g)
+  ] ++ (map plainText << toList << .response <| g)
 
 renderBoard : (Msg -> String -> Element) -> GameState -> Element
 renderBoard but = let mkBut p c =  but (Tile p c) (String.cons c "") in 
-  flow down . map (flow right) . map (map (uncurry mkBut)) . B.unB . .board
+  flow down << map (flow right) << map (map (uncurry mkBut)) << B.unB << .board
 
 -- | For debugging
 renderState : GameState -> Element

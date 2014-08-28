@@ -11,10 +11,10 @@ remove x xs = case xs of
 
 -- List monad ops
 (>>=) : [a] -> (a -> [b]) -> [b]
-xs >>= k = foldr ((++) . k) [] xs
+xs >>= k = foldr ((++) << k) [] xs
 
 foldMap : (a -> [b]) -> [a] -> [b]
-foldMap f = concat . map f
+foldMap f = concat << map f
 
 -- Maybe monad
 (?>>=) : Maybe a -> (a -> Maybe b) -> Maybe b
@@ -27,4 +27,4 @@ mx ?>>= k =
 (=<<?) = flip (?>>=)
 
 (<~?) : (a -> b) -> Maybe a -> Maybe b
-f <~? m = (Just . f) =<<? m
+f <~? m = (Just << f) =<<? m
